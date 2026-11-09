@@ -5,7 +5,7 @@ import MobileAppHeader from "../../components/layout/MobileAppHeader";
 import MobileBottomNav from "../../components/layout/MobileBottomNav";
 import GlassCard from "../../components/ui/GlassCard";
 import { useMess } from "../../context/MessContext";
-import { formatTaka, toBengaliNumeral } from "../../utils/formatters";
+import { formatTaka, toBengaliNumeral, formatMonthBengali } from "../../utils/formatters";
 import { Zap, Flame, Wifi, Users, Trash2, Home, Check, Calculator } from "lucide-react";
 
 export default function FixedCostsPage() {
@@ -74,7 +74,7 @@ export default function FixedCostsPage() {
               ফিক্সড ও ইউটিলিটি বিল
             </h1>
             <span className="text-xs text-slate-400">
-              হিসাবের মাস: <span className="font-english">{selectedMonth}</span>
+              হিসাবের মাস: <span className="font-bengali font-semibold text-amber-400">{formatMonthBengali(selectedMonth)}</span>
             </span>
           </div>
 

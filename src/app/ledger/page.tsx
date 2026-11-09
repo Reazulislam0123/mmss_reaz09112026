@@ -6,7 +6,7 @@ import MobileBottomNav from "../../components/layout/MobileBottomNav";
 import MemberSettlementCard from "../../components/ledger/MemberSettlementCard";
 import GlassCard from "../../components/ui/GlassCard";
 import { useMess } from "../../context/MessContext";
-import { formatTaka } from "../../utils/formatters";
+import { formatTaka, formatMonthBengali } from "../../utils/formatters";
 import { getWhatsAppShareUrl } from "../../utils/whatsapp";
 import { FileSpreadsheet, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 
@@ -36,7 +36,7 @@ export default function LedgerPage() {
               মাসিক ফাইনাল লেজার
             </h1>
             <span className="text-xs text-slate-400 font-bengali">
-              মাস: <span className="font-english">{selectedMonth}</span>
+              মাস: <span className="font-bengali font-semibold text-amber-400">{formatMonthBengali(selectedMonth)}</span>
             </span>
           </div>
 
