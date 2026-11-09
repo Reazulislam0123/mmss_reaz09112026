@@ -72,7 +72,7 @@ export default function LoginPage() {
               </label>
               <input
                 type="email"
-                placeholder="manager@smartmms.bd"
+                placeholder="reazul.islam6164@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -86,7 +86,7 @@ export default function LoginPage() {
               </label>
               <input
                 type="password"
-                placeholder="••••••••"
+                placeholder="•••••••• (যেমন: admin123)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

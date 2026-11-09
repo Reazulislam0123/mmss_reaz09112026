@@ -66,21 +66,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.user) {
           setMongoUser(data.user);
           setIsDemoMode(false);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("smart_mms_active_user", JSON.stringify(data.user));
+          }
         }
       }
     } catch (e) {
       console.warn("Could not sync with MongoDB:", e);
-      setMongoUser({
+      const fallbackUser: IMongoUser = {
         firebaseUid: fbUser.uid,
         email: fbUser.email || "",
         fullName: fbUser.displayName || "সদস্য",
-        role: "member",
-      });
+        role: String(fbUser.email).toLowerCase() === "reazul.islam6164@gmail.com" ? "super_admin" : "member",
+      };
+      setMongoUser(fallbackUser);
       setIsDemoMode(false);
     }
   };
 
   useEffect(() => {
+    // Check if session was saved in localStorage for persistent admin access
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("smart_mms_active_user");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.email) {
+            setMongoUser(parsed);
+          }
+        }
+      } catch (e) {}
+    }
+
     if (!auth) {
       setLoading(false);
       return;
@@ -92,9 +109,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsDemoMode(false);
         await syncWithDatabase(user);
       } else {
-        setFirebaseUser(null);
-        setMongoUser(null);
-        setIsDemoMode(false);
+        // If there's an active local session for admin, preserve it, else clear
+        let preserved = false;
+        if (typeof window !== "undefined") {
+          try {
+            const saved = localStorage.getItem("smart_mms_active_user");
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (parsed && parsed.email) {
+                setMongoUser(parsed);
+                preserved = true;
+              }
+            }
+          } catch (e) {}
+        }
+        if (!preserved) {
+          setFirebaseUser(null);
+          setMongoUser(null);
+          setIsDemoMode(false);
+        }
       }
       setLoading(false);
     });
@@ -104,6 +137,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, pass: string) => {
     setLoading(true);
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    const cleanPass = String(pass || "").trim();
+
+    // 1. Direct Super Admin Credentials Check (reazul.islam6164@gmail.com + admin123 / admin1234)
+    if (cleanEmail === "reazul.islam6164@gmail.com" && (cleanPass === "admin123" || cleanPass === "admin1234")) {
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: cleanEmail, password: cleanPass }),
+        });
+        const data = await res.json();
+        if (res.ok && data.user) {
+          setMongoUser(data.user);
+          setIsDemoMode(false);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("smart_mms_active_user", JSON.stringify(data.user));
+          }
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.warn("Backend direct admin login notice:", e);
+      }
+    }
+
+    // 2. Firebase Email/Password Sign-In
     try {
       if (auth) {
         const cred = await signInWithEmailAndPassword(auth, email, pass);
@@ -111,7 +171,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await syncWithDatabase(cred.user);
       }
     } catch (err: any) {
-      throw new Error(err.message || "লগইন ব্যর্থ হয়েছে");
+      // If Firebase sign-in failed, but credentials match Super Admin, authenticate directly
+      if (cleanEmail === "reazul.islam6164@gmail.com" && (cleanPass === "admin123" || cleanPass === "admin1234")) {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: cleanEmail, password: cleanPass }),
+        });
+        const data = await res.json();
+        if (res.ok && data.user) {
+          setMongoUser(data.user);
+          setIsDemoMode(false);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("smart_mms_active_user", JSON.stringify(data.user));
+          }
+          return;
+        }
+      }
+      throw new Error(err.message || "লগইন ব্যর্থ হয়েছে। ইমেইল বা পাসওয়ার্ড সঠিক নয়।");
     } finally {
       setLoading(false);
     }
@@ -165,6 +242,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (auth) await signOut(auth);
     } catch (e) {
       console.warn("SignOut warning:", e);
+    }
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("smart_mms_active_user");
     }
     setFirebaseUser(null);
     setMongoUser(null);

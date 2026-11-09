@@ -28,11 +28,22 @@ export async function POST(req: Request) {
       });
     }
 
-    let user = await User.findOne({ firebaseUid });
+    let user = await User.findOne({
+      $or: [{ firebaseUid }, { email: String(email).toLowerCase() }],
+    });
 
-    if (!user) {
+    if (user) {
+      if (user.firebaseUid !== firebaseUid) {
+        user.firebaseUid = firebaseUid;
+      }
+      if (String(email).toLowerCase() === "reazul.islam6164@gmail.com") {
+        user.role = "super_admin";
+      }
+      await user.save();
+    } else {
       let assignedHouseId = "HOUSE_DHAKA_01";
-      let userRole: "super_admin" | "manager" | "member" = "member";
+      let userRole: "super_admin" | "manager" | "member" =
+        String(email).toLowerCase() === "reazul.islam6164@gmail.com" ? "super_admin" : "member";
 
       if (joinCode) {
         const cleanCode = joinCode.trim();
