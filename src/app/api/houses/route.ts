@@ -65,3 +65,30 @@ export async function POST(req: Request) {
   }
 }
 
+export async function PUT(req: Request) {
+  try {
+    const { houseId, dutyManagerUid, dutyStartDate, dutyEndDate, dutyRoster } = await req.json();
+
+    if (!houseId) {
+      return NextResponse.json({ error: "houseId is required" }, { status: 400 });
+    }
+
+    await connectToDatabase();
+
+    const updateFields: any = {};
+    if (dutyManagerUid !== undefined) updateFields.dutyManagerUid = dutyManagerUid;
+    if (dutyStartDate !== undefined) updateFields.dutyStartDate = dutyStartDate;
+    if (dutyEndDate !== undefined) updateFields.dutyEndDate = dutyEndDate;
+    if (dutyRoster !== undefined) updateFields.dutyRoster = dutyRoster;
+
+    const updated = await House.findOneAndUpdate(
+      { houseId },
+      { $set: updateFields },
+      { new: true }
+    );
+
+    return NextResponse.json({ house: updated });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

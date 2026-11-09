@@ -13,7 +13,7 @@ import StepperControl from "../../components/ui/StepperControl";
 import { useAuth } from "../../context/AuthContext";
 import { useMess } from "../../context/MessContext";
 import { formatTaka, toBengaliNumeral, getCurrentDate } from "../../utils/formatters";
-import { Utensils, ShoppingCart, Coins, Calculator, ArrowRight } from "lucide-react";
+import { Utensils, ShoppingCart, Coins, Calculator, ArrowRight, ChefHat } from "lucide-react";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -25,6 +25,7 @@ export default function DashboardPage() {
     deposits,
     summary,
     memberStatements,
+    dutyManagerUid,
     addMealEntry,
     addBazaarEntry,
     addDepositEntry,
@@ -81,6 +82,34 @@ export default function DashboardPage() {
           netBalance={userStatement.netBalance}
           memberName={userStatement.fullName}
         />
+
+        {/* Rotating 5-6 Days Duty Meal Manager Card */}
+        {(() => {
+          const dutyMgr = members.find((m) => m.firebaseUid === dutyManagerUid) || members[1] || members[0];
+          return (
+            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800/90 flex items-center justify-between font-bengali shadow-sm">
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+                  <ChefHat className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded-md">
+                      চলতি মিল ম্যানেজার (৫–৬ দিন)
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-100 block mt-0.5 truncate">
+                    {dutyMgr.fullName} (রুম {dutyMgr.roomNo})
+                  </span>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-[10px] text-slate-400 block">দায়িত্ব: মিল ও বাজার</span>
+                <span className="text-[11px] font-bold text-emerald-400">অন ডিউটি 🔥</span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 4-Card KPI Matrix */}
         <div className="grid grid-cols-2 gap-2.5">

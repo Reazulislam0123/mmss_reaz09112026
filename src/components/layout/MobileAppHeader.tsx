@@ -7,6 +7,7 @@ import { useMess } from "../../context/MessContext";
 import { MOCK_USERS } from "../../lib/mockData";
 import BottomDrawer from "../ui/BottomDrawer";
 import BrandLogo from "../ui/BrandLogo";
+import MealManagerRosterDrawer from "../meals/MealManagerRosterDrawer";
 import {
   Building2,
   Calendar,
@@ -20,6 +21,8 @@ import {
   Check,
   UserCog,
   Sparkles,
+  ChefHat,
+  RotateCw,
 } from "lucide-react";
 
 export const MobileAppHeader: React.FC = () => {
@@ -31,6 +34,9 @@ export const MobileAppHeader: React.FC = () => {
     setCurrentHouse,
     changeHouseManager,
     createNewHouse,
+    dutyManagerUid,
+    dutyStartDate,
+    dutyEndDate,
     members,
     selectedMonth,
     setSelectedMonth,
@@ -38,6 +44,7 @@ export const MobileAppHeader: React.FC = () => {
 
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [showHouseDrawer, setShowHouseDrawer] = useState(false);
+  const [showRosterDrawer, setShowRosterDrawer] = useState(false);
   const [newHouseName, setNewHouseName] = useState("");
   const [showNewHouseForm, setShowNewHouseForm] = useState(false);
 
@@ -208,6 +215,31 @@ export const MobileAppHeader: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Rotating 5-6 Days Meal Manager Status Bar */}
+        <div className="max-w-md mx-auto pt-2 border-t border-slate-800/60 mt-2 flex items-center justify-between text-[11px] font-bengali">
+          <button
+            onClick={() => setShowRosterDrawer(true)}
+            className="w-full flex items-center justify-between bg-gradient-to-r from-amber-500/15 to-amber-500/5 hover:from-amber-500/20 border border-amber-500/30 text-amber-200 px-3 py-1.5 rounded-2xl active:scale-[0.99] transition-all shadow-sm"
+            title="মিল ম্যানেজার রোটেশন শিডিউল ও দায়িত্ব পরিবর্তন"
+          >
+            <div className="flex items-center gap-2 truncate">
+              <div className="w-5 h-5 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <ChefHat className="w-3.5 h-3.5" />
+              </div>
+              <span className="truncate">
+                চলতি মিল ম্যানেজার:{" "}
+                <strong className="text-amber-300 font-bold">
+                  {members.find((m) => m.firebaseUid === dutyManagerUid)?.fullName || "শাকিল হোসেন"}
+                </strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold shrink-0 ml-1">
+              <span>৫-৬ দিনের রোস্টার</span>
+              <RotateCw className="w-2.5 h-2.5" />
+            </div>
+          </button>
+        </div>
       </header>
 
       {/* Mess Selection & Manager Assignment Drawer */}
@@ -352,6 +384,11 @@ export const MobileAppHeader: React.FC = () => {
           )}
         </div>
       </BottomDrawer>
+      {/* Rotating Meal Manager Schedule & Handover Drawer */}
+      <MealManagerRosterDrawer
+        isOpen={showRosterDrawer}
+        onClose={() => setShowRosterDrawer(false)}
+      />
     </>
   );
 };

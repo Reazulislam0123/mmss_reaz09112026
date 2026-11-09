@@ -18,7 +18,16 @@ import {
   MOCK_DEPOSITS,
   MOCK_FIXED_COSTS,
 } from "../lib/mockData";
-import { getCurrentMonth } from "../utils/formatters";
+import { getCurrentMonth, getCurrentDate } from "../utils/formatters";
+
+export interface IDutyShift {
+  firebaseUid: string;
+  name: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  daysCount: number;
+  status: "completed" | "active" | "upcoming";
+}
 
 export interface IHouseData {
   houseId: string;
@@ -26,6 +35,10 @@ export interface IHouseData {
   address?: string;
   joinCode: string;
   managerFirebaseUid: string;
+  dutyManagerUid?: string;
+  dutyStartDate?: string;
+  dutyEndDate?: string;
+  dutyRoster?: IDutyShift[];
   status: string;
 }
 
@@ -35,6 +48,12 @@ interface MessContextType {
   setCurrentHouse: (house: IHouseData) => void;
   changeHouseManager: (managerUid: string) => Promise<void>;
   createNewHouse: (name: string, address?: string) => Promise<void>;
+  dutyManagerUid: string;
+  dutyStartDate: string;
+  dutyEndDate: string;
+  dutyRoster: IDutyShift[];
+  handoverDutyManager: (newManagerUid: string, days?: number) => Promise<void>;
+  generateDutyRoster: (daysPerPeriod?: number) => Promise<void>;
   selectedMonth: string;
   setSelectedMonth: (month: string) => void;
   members: IMemberProfile[];
@@ -60,18 +79,26 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentHouse, setCurrentHouse] = useState<IHouseData>({
     ...MOCK_HOUSE,
     managerFirebaseUid: "UID_ADMIN_01",
+    dutyManagerUid: "UID_MEMBER_02", // Shakil is currently on 5-6 day meal manager duty
+    dutyStartDate: "2026-11-06",
+    dutyEndDate: "2026-11-11",
   });
+
   const [availableHouses, setAvailableHouses] = useState<IHouseData[]>([
     {
       ...MOCK_HOUSE,
       managerFirebaseUid: "UID_ADMIN_01",
+      dutyManagerUid: "UID_MEMBER_02",
+      dutyStartDate: "2026-11-06",
+      dutyEndDate: "2026-11-11",
     },
     {
       houseId: "HOUSE_MIRPUR_02",
       name: "মিরপুর স্টুডেন্ট মেস",
       address: "সেকশন ১০, মিরপুর, ঢাকা",
       joinCode: "MMS-8M3P",
-      managerFirebaseUid: "UID_MEMBER_02",
+      managerFirebaseUid: "UID_MEMBER_03",
+      dutyManagerUid: "UID_MEMBER_03",
       status: "active",
     },
   ]);
@@ -83,6 +110,133 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [deposits, setDeposits] = useState<IDepositRecord[]>(MOCK_DEPOSITS as IDepositRecord[]);
   const [fixedCosts, setFixedCosts] = useState<IFixedCostsData>(MOCK_FIXED_COSTS);
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Rotating Meal Manager State
+  const [dutyManagerUid, setDutyManagerUid] = useState<string>("UID_MEMBER_02");
+  const [dutyStartDate, setDutyStartDate] = useState<string>("2026-11-06");
+  const [dutyEndDate, setDutyEndDate] = useState<string>("2026-11-11");
+  const [dutyRoster, setDutyRoster] = useState<IDutyShift[]>([]);
+
+  // Auto-generate 5-6 days roster for members
+  const generateDutyRoster = useCallback(
+    async (daysPerPeriod = 6) => {
+      if (!members || members.length === 0) return;
+
+      const [yStr, mStr] = selectedMonth.split("-");
+      const y = parseInt(yStr, 10);
+      const m = parseInt(mStr, 10);
+      const totalDays = new Date(y, m, 0).getDate();
+
+      const roster: IDutyShift[] = [];
+      let currentDay = 1;
+      let memberIdx = 0;
+      const today = getCurrentDate();
+
+      while (currentDay <= totalDays) {
+        const member = members[memberIdx % members.length];
+        const startDay = currentDay;
+        const endDay = Math.min(currentDay + daysPerPeriod - 1, totalDays);
+        const startStr = `${selectedMonth}-${String(startDay).padStart(2, "0")}`;
+        const endStr = `${selectedMonth}-${String(endDay).padStart(2, "0")}`;
+
+        let status: "completed" | "active" | "upcoming" = "upcoming";
+        if (today > endStr) {
+          status = "completed";
+        } else if (today >= startStr && today <= endStr) {
+          status = "active";
+          setDutyManagerUid(member.firebaseUid);
+          setDutyStartDate(startStr);
+          setDutyEndDate(endStr);
+        }
+
+        roster.push({
+          firebaseUid: member.firebaseUid,
+          name: member.fullName,
+          startDate: startStr,
+          endDate: endStr,
+          daysCount: endDay - startDay + 1,
+          status,
+        });
+
+        currentDay = endDay + 1;
+        memberIdx++;
+      }
+
+      setDutyRoster(roster);
+
+      try {
+        await fetch("/api/houses", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            houseId: currentHouse.houseId,
+            dutyRoster: roster,
+          }),
+        });
+      } catch (e) {}
+    },
+    [members, selectedMonth, currentHouse.houseId]
+  );
+
+  // Initialize roster once members are ready
+  useEffect(() => {
+    if (dutyRoster.length === 0 && members.length > 0) {
+      generateDutyRoster(6);
+    }
+  }, [members, dutyRoster.length, generateDutyRoster]);
+
+  // Handover Duty to a new manager
+  const handoverDutyManager = async (newManagerUid: string, days = 6) => {
+    const today = getCurrentDate();
+    const todayObj = new Date();
+    todayObj.setDate(todayObj.getDate() + days - 1);
+    const endStr = todayObj.toISOString().split("T")[0];
+
+    setDutyManagerUid(newManagerUid);
+    setDutyStartDate(today);
+    setDutyEndDate(endStr);
+
+    // Update roster active statuses
+    setDutyRoster((prev) =>
+      prev.map((shift) => {
+        if (shift.firebaseUid === newManagerUid) {
+          return { ...shift, status: "active", startDate: today, endDate: endStr };
+        }
+        if (shift.status === "active") {
+          return { ...shift, status: "completed" };
+        }
+        return shift;
+      })
+    );
+
+    // Give this member entry permissions
+    try {
+      await fetch("/api/houses", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          houseId: currentHouse.houseId,
+          dutyManagerUid: newManagerUid,
+          dutyStartDate: today,
+          dutyEndDate: endStr,
+        }),
+      });
+
+      await fetch("/api/members", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firebaseUid: newManagerUid,
+          houseId: currentHouse.houseId,
+          permissions: {
+            canEntryMeal: true,
+            canEntryBazaar: true,
+            canManagePeoples: false,
+          },
+        }),
+      });
+    } catch (e) {}
+  };
 
   // Initialize pre-seeded meals for the month if empty
   useEffect(() => {
@@ -136,6 +290,14 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (housesRes.status === "fulfilled" && housesRes.value?.houses?.length) {
         setAvailableHouses(housesRes.value.houses);
+        const currentServerHouse = housesRes.value.houses.find(
+          (h: any) => h.houseId === currentHouse.houseId
+        );
+        if (currentServerHouse?.dutyManagerUid) {
+          setDutyManagerUid(currentServerHouse.dutyManagerUid);
+          setDutyStartDate(currentServerHouse.dutyStartDate || "");
+          setDutyEndDate(currentServerHouse.dutyEndDate || "");
+        }
       }
     } catch (e) {
       console.warn("API refresh fallback to mock:", e);
@@ -144,7 +306,7 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentHouse.houseId, selectedMonth]);
 
-  // Re-assign Mess Manager
+  // Re-assign Mess Overall House Admin
   const changeHouseManager = async (managerUid: string) => {
     setCurrentHouse((prev) => ({ ...prev, managerFirebaseUid: managerUid }));
     setMembers((prev) =>
@@ -175,6 +337,7 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
       address: address || "",
       joinCode: `MMS-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
       managerFirebaseUid: members[0]?.firebaseUid || "UID_ADMIN_01",
+      dutyManagerUid: members[0]?.firebaseUid || "UID_ADMIN_01",
       status: "active",
     };
 
@@ -304,6 +467,12 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentHouse,
         changeHouseManager,
         createNewHouse,
+        dutyManagerUid,
+        dutyStartDate,
+        dutyEndDate,
+        dutyRoster,
+        handoverDutyManager,
+        generateDutyRoster,
         selectedMonth,
         setSelectedMonth,
         members,
