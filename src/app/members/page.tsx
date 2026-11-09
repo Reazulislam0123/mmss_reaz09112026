@@ -9,11 +9,11 @@ import { useAuth } from "../../context/AuthContext";
 import { useMess } from "../../context/MessContext";
 import EditProfileDrawer from "../../components/profile/EditProfileDrawer";
 import { formatTaka } from "../../utils/formatters";
-import { Users, KeyRound, Copy, Shield, ShieldCheck, Home, Pencil, Check, UserCheck } from "lucide-react";
+import { Users, KeyRound, Copy, Shield, ShieldCheck, Home, Pencil, Check, UserCheck, Trash2 } from "lucide-react";
 
 export default function MembersPage() {
   const { mongoUser } = useAuth();
-  const { currentHouse, members, changeHouseManager, updateHouseName } = useMess();
+  const { currentHouse, members, changeHouseManager, updateHouseName, refreshData } = useMess();
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [houseNameInput, setHouseNameInput] = useState(currentHouse.name);
@@ -21,6 +21,32 @@ export default function MembersPage() {
   const [savingName, setSavingName] = useState(false);
   const [successToast, setSuccessToast] = useState("");
   const [showProfileDrawer, setShowProfileDrawer] = useState(false);
+
+  const isSuperAdmin =
+    mongoUser?.role === "super_admin" ||
+    mongoUser?.email?.toLowerCase() === "reazul.islam6164@gmail.com";
+
+  const handleDeleteMember = async (memberUid: string, memberName: string) => {
+    if (!confirm(`সতর্কতা: আপনি কি নিশ্চিতভাবে সদস্য '${memberName}' কে মেস থেকে স্থায়ীভাবে ডিলিট করতে চান?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/users?firebaseUid=${memberUid}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessToast(data.message || "সদস্য ডিলিট সম্পন্ন হয়েছে!");
+        await refreshData();
+        setTimeout(() => setSuccessToast(""), 2000);
+      } else {
+        alert(data.error || "ডিলিট ব্যর্থ হয়েছে");
+      }
+    } catch (e: any) {
+      alert("সার্ভার এরর: " + e.message);
+    }
+  };
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(currentHouse.joinCode);
@@ -267,6 +293,17 @@ export default function MembersPage() {
                         </>
                       )}
                     </button>
+
+                    {/* Super Admin Direct Member Delete */}
+                    {isSuperAdmin && !isMe && (
+                      <button
+                        onClick={() => handleDeleteMember(m.firebaseUid, m.fullName)}
+                        className="p-1.5 rounded-xl text-xs font-bengali flex items-center justify-center bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 active:scale-95 transition-all"
+                        title="সুপার অ্যাডমিন: এই সদস্যকে মেস থেকে ডিলিট করুন"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </GlassCard>
