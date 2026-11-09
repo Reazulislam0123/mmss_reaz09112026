@@ -341,8 +341,40 @@ async function runAllTests() {
     totalMeals: { type: Number, default: 0 },
   });
 
+  const UserSchema = new mongoose.Schema({
+    firebaseUid: { type: String, required: true },
+    email: { type: String, required: true },
+    fullName: { type: String, required: true },
+    phone: { type: String, default: "" },
+    roomNo: { type: String, default: "" },
+    role: { type: String, default: "member" },
+    customRent: { type: Number, default: 0 },
+  });
+
   const HouseModel = mongoose.models.TestHouse || mongoose.model("TestHouse", HouseSchema);
   const MealModel = mongoose.models.TestMeal || mongoose.model("TestMeal", MealSchema);
+  const UserModel = mongoose.models.TestUser || mongoose.model("TestUser", UserSchema);
+
+  // Validate user profile schema and updates
+  const testUserDoc = new UserModel({
+    firebaseUid: "UID_USER_PROFILE_TEST",
+    email: "user@test.com",
+    fullName: "ANM Reazul Islam",
+    phone: "01712345678",
+    roomNo: "302",
+  });
+  const userErr = testUserDoc.validateSync();
+  assert(!userErr, "User Profile Mongoose model validates correctly with fullName, phone, roomNo");
+
+  // Simulate updating profile fields
+  testUserDoc.fullName = "Reazul Updated";
+  testUserDoc.phone = "01899999999";
+  testUserDoc.roomNo = "405";
+  const userUpdateErr = testUserDoc.validateSync();
+  assert(
+    !userUpdateErr && testUserDoc.fullName === "Reazul Updated" && testUserDoc.roomNo === "405",
+    "User Profile updates are validated and properly reflected"
+  );
 
   // Validate schema definitions
   const testHouseDoc = new HouseModel({

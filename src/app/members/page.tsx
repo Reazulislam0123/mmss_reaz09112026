@@ -5,11 +5,14 @@ import MobileAppHeader from "../../components/layout/MobileAppHeader";
 import MobileBottomNav from "../../components/layout/MobileBottomNav";
 import GlassCard from "../../components/ui/GlassCard";
 import Badge from "../../components/ui/Badge";
+import { useAuth } from "../../context/AuthContext";
 import { useMess } from "../../context/MessContext";
+import EditProfileDrawer from "../../components/profile/EditProfileDrawer";
 import { formatTaka } from "../../utils/formatters";
-import { Users, KeyRound, Copy, Shield, ShieldCheck, Home, Pencil, Check } from "lucide-react";
+import { Users, KeyRound, Copy, Shield, ShieldCheck, Home, Pencil, Check, UserCheck } from "lucide-react";
 
 export default function MembersPage() {
+  const { mongoUser } = useAuth();
   const { currentHouse, members, changeHouseManager, updateHouseName } = useMess();
 
   const [isEditingName, setIsEditingName] = useState(false);
@@ -17,6 +20,7 @@ export default function MembersPage() {
   const [houseAddressInput, setHouseAddressInput] = useState(currentHouse.address || "");
   const [savingName, setSavingName] = useState(false);
   const [successToast, setSuccessToast] = useState("");
+  const [showProfileDrawer, setShowProfileDrawer] = useState(false);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(currentHouse.joinCode);
@@ -193,6 +197,7 @@ export default function MembersPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
           {members.map((m) => {
+            const isMe = m.firebaseUid === mongoUser?.firebaseUid;
             const isManager =
               m.firebaseUid === currentHouse.managerFirebaseUid ||
               (m.role === "manager" && !members.some((x) => x.firebaseUid === currentHouse.managerFirebaseUid));
@@ -215,6 +220,17 @@ export default function MembersPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {isMe && (
+                      <button
+                        onClick={() => setShowProfileDrawer(true)}
+                        className="px-2.5 py-1.5 rounded-xl text-xs font-bengali flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 active:scale-95 transition-all font-semibold"
+                        title="নিজের প্রোফাইল এডিট করুন"
+                      >
+                        <Pencil className="w-3 h-3 text-amber-400" />
+                        <span>প্রোফাইল এডিট</span>
+                      </button>
+                    )}
+
                     {m.customRent && m.customRent > 0 ? (
                       <div className="text-right mr-1">
                         <span className="text-[10px] text-slate-500 font-bengali block">সিট ভাড়া</span>
@@ -259,6 +275,11 @@ export default function MembersPage() {
           </div>
         </div>
       </main>
+
+      <EditProfileDrawer
+        isOpen={showProfileDrawer}
+        onClose={() => setShowProfileDrawer(false)}
+      />
 
       <MobileBottomNav />
     </div>

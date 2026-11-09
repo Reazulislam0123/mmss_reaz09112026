@@ -7,6 +7,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   signInWithPopup,
+  updateProfile,
   User as FirebaseUser,
 } from "firebase/auth";
 import { auth, googleProvider } from "../lib/firebase/client";
@@ -31,6 +32,11 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   joinHouseByCode: (code: string) => Promise<{ success: boolean; message: string }>;
+  updateUserProfile: (data: {
+    fullName: string;
+    phone?: string;
+    roomNo?: string;
+  }) => Promise<{ success: boolean; message: string }>;
   isDemoMode: boolean;
 }
 
@@ -195,6 +201,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserProfile = async (data: {
+    fullName: string;
+    phone?: string;
+    roomNo?: string;
+  }): Promise<{ success: boolean; message: string }> => {
+    const uid = firebaseUser?.uid || mongoUser?.firebaseUid;
+    if (!uid) {
+      return { success: false, message: "ব্যবহারকারী লগইন অবস্থায় নেই" };
+    }
+
+    try {
+      // 1. Update in MongoDB Atlas
+      const res = await fetch("/api/users/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firebaseUid: uid,
+          fullName: data.fullName,
+          phone: data.phone,
+          roomNo: data.roomNo,
+        }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        return { success: false, message: resData.error || "প্রোফাইল আপডেট ব্যর্থ হয়েছে" };
+      }
+
+      // 2. Update Firebase displayName if logged in with Firebase Auth
+      if (firebaseUser && data.fullName) {
+        try {
+          await updateProfile(firebaseUser, { displayName: data.fullName });
+        } catch (fbErr) {
+          console.warn("Could not update Firebase displayName:", fbErr);
+        }
+      }
+
+      // 3. Update local state
+      if (resData.user) {
+        setMongoUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                ...resData.user,
+              }
+            : resData.user
+        );
+      } else {
+        setMongoUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                fullName: data.fullName,
+                phone: data.phone,
+                roomNo: data.roomNo,
+              }
+            : null
+        );
+      }
+
+      return {
+        success: true,
+        message: resData.message || "প্রোফাইল সফলভাবে আপডেট করা হয়েছে!",
+      };
+    } catch (err: any) {
+      return { success: false, message: err.message || "নেটওয়ার্ক এরর" };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -206,6 +281,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         logout,
         joinHouseByCode,
+        updateUserProfile,
         isDemoMode,
       }}
     >

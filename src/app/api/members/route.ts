@@ -48,7 +48,7 @@ export async function GET(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const { firebaseUid, houseId, roomNo, customRent, role, permissions } = await req.json();
+    const { firebaseUid, houseId, fullName, phone, roomNo, customRent, role, permissions } = await req.json();
 
     if (!firebaseUid) {
       return NextResponse.json({ error: "firebaseUid is required" }, { status: 400 });
@@ -58,6 +58,8 @@ export async function PUT(req: Request) {
       await connectToDatabase();
 
       const userUpdate: any = {};
+      if (fullName !== undefined && fullName.trim()) userUpdate.fullName = fullName.trim();
+      if (phone !== undefined) userUpdate.phone = phone.trim();
       if (roomNo !== undefined) userUpdate.roomNo = roomNo;
       if (customRent !== undefined) userUpdate.customRent = Number(customRent);
       if (role !== undefined) userUpdate.role = role;

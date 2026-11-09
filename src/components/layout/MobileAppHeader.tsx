@@ -9,6 +9,7 @@ import BottomDrawer from "../ui/BottomDrawer";
 import BrandLogo from "../ui/BrandLogo";
 import MonthPickerDrawer from "../ui/MonthPickerDrawer";
 import MealManagerRosterDrawer from "../meals/MealManagerRosterDrawer";
+import EditProfileDrawer from "../profile/EditProfileDrawer";
 import { formatMonthBengali } from "../../utils/formatters";
 import {
   Building2,
@@ -26,6 +27,7 @@ import {
   AlertCircle,
   Hash,
   Pencil,
+  UserCheck,
 } from "lucide-react";
 
 export const MobileAppHeader: React.FC = () => {
@@ -51,6 +53,7 @@ export const MobileAppHeader: React.FC = () => {
   const [showJoinDrawer, setShowJoinDrawer] = useState(false);
   const [showRosterDrawer, setShowRosterDrawer] = useState(false);
   const [showMonthDrawer, setShowMonthDrawer] = useState(false);
+  const [showProfileDrawer, setShowProfileDrawer] = useState(false);
 
   // Editable Mess Name states
   const [isEditingHouseName, setIsEditingHouseName] = useState(false);
@@ -150,6 +153,7 @@ export const MobileAppHeader: React.FC = () => {
     { label: "ইউটিলিটি বিল", href: "/fixed-costs" },
     { label: "ব্যক্তিগত সমন্বয়", href: "/individual-bills" },
     { label: "মেস সদস্য", href: "/members" },
+    { label: "প্রোফাইল", href: "/profile" },
   ];
 
   return (
@@ -246,6 +250,13 @@ export const MobileAppHeader: React.FC = () => {
                     <div className="text-[11px] text-slate-400 truncate font-english">
                       {mongoUser?.email}
                     </div>
+                    {(mongoUser?.phone || mongoUser?.roomNo) && (
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-english mt-1">
+                        {mongoUser?.roomNo && <span>রুম: {mongoUser.roomNo}</span>}
+                        {mongoUser?.roomNo && mongoUser?.phone && <span>•</span>}
+                        {mongoUser?.phone && <span>{mongoUser.phone}</span>}
+                      </div>
+                    )}
                     <div className="mt-1.5 pt-1.5 border-t border-slate-850 flex items-center justify-between text-[10px] text-slate-400">
                       <span>বর্তমান মেস:</span>
                       <span className="font-semibold text-amber-300 truncate max-w-[120px]">
@@ -256,12 +267,27 @@ export const MobileAppHeader: React.FC = () => {
 
                   {/* Clean Action Links */}
                   <div className="space-y-1">
+                    {/* Edit Profile Button */}
+                    <button
+                      onClick={() => {
+                        setShowPersonaMenu(false);
+                        setShowProfileDrawer(true);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl text-xs text-amber-300 hover:bg-amber-500/10 border border-amber-500/30 bg-amber-500/5 flex items-center justify-between transition-colors font-bold"
+                    >
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-4 h-4 text-amber-400" />
+                        <span>প্রোফাইল সম্পাদনা (Edit)</span>
+                      </div>
+                      <Pencil className="w-3 h-3 text-amber-400/80" />
+                    </button>
+
                     <button
                       onClick={() => {
                         setShowPersonaMenu(false);
                         setShowJoinDrawer(true);
                       }}
-                      className="w-full text-left px-3 py-2 rounded-xl text-xs text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 flex items-center gap-2 transition-colors font-medium"
+                      className="w-full text-left px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-800 border border-slate-800 flex items-center gap-2 transition-colors font-medium"
                     >
                       <KeyRound className="w-4 h-4 text-amber-400" />
                       <span>মেস কোড/আইডি দিয়ে যোগ দিন</span>
@@ -662,6 +688,12 @@ export const MobileAppHeader: React.FC = () => {
         onClose={() => setShowMonthDrawer(false)}
         selectedMonth={selectedMonth}
         onSelectMonth={(m) => setSelectedMonth(m)}
+      />
+
+      {/* Edit User Profile Drawer */}
+      <EditProfileDrawer
+        isOpen={showProfileDrawer}
+        onClose={() => setShowProfileDrawer(false)}
       />
     </>
   );
