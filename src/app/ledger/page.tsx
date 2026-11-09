@@ -28,7 +28,7 @@ export default function LedgerPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
       <MobileAppHeader />
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
+      <main className="max-w-md md:max-w-6xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-4 sm:space-y-6 pb-28 md:pb-12">
         {/* Title */}
         <div className="flex items-center justify-between">
           <div>
@@ -74,19 +74,21 @@ export default function LedgerPage() {
           </GlassCard>
         </div>
 
-        {/* Member-by-Member Settlement Cards */}
+        {/* Member-by-Member Settlement Cards (Responsive Grid on Desktop) */}
         <div className="space-y-3">
           <h2 className="text-sm font-bold text-slate-300 font-bengali">
-            সদস্যভিত্তিক চূড়ান্ত হিসাব তালিকা
+            সদস্যভিত্তিক চূড়ান্ত হিসাব তালিকা ({memberStatements.length} জন)
           </h2>
 
-          {memberStatements.map((stmt) => (
-            <MemberSettlementCard
-              key={stmt.firebaseUid}
-              statement={stmt}
-              onWhatsAppShare={() => handleShare(stmt)}
-            />
-          ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+            {memberStatements.map((stmt) => (
+              <MemberSettlementCard
+                key={stmt.firebaseUid}
+                statement={stmt}
+                onWhatsAppShare={() => handleShare(stmt)}
+              />
+            ))}
+          </div>
         </div>
       </main>
 

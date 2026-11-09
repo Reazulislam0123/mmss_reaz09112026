@@ -42,7 +42,7 @@ export default function MembersPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
       <MobileAppHeader />
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
+      <main className="max-w-md md:max-w-6xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-4 sm:space-y-6 pb-28 md:pb-12">
         {/* Title */}
         <div className="flex items-center justify-between">
           <div>
@@ -59,8 +59,10 @@ export default function MembersPage() {
           </div>
         </div>
 
-        {/* Mess Name & Details Card with 1-Click Inline Edit */}
-        <GlassCard className="p-4 border-slate-800 bg-slate-900/60">
+        {/* Top Cards: Mess Name & Join Code (2 columns on desktop) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+          {/* Mess Name & Details Card with 1-Click Inline Edit */}
+          <GlassCard className="p-4 border-slate-800 bg-slate-900/60 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-600 text-slate-950 flex items-center justify-center font-bold">
@@ -181,10 +183,15 @@ export default function MembersPage() {
           <p className="text-[11px] text-slate-400 font-bengali mt-2">
             নতুন সদস্যরা এই জয়েন কোড (<span className="font-mono text-amber-300">{currentHouse.joinCode}</span>) বা ইউনিক আইডি (<span className="font-mono text-slate-300">{currentHouse.houseId}</span>) দিয়ে সরাসরি আপনার মেসে যুক্ত হতে পারবে।
           </p>
-        </GlassCard>
+          </GlassCard>
+        </div>
 
-        {/* Members Roster with Manager Selection */}
+        {/* Members Roster with Manager Selection (Responsive Grid on Desktop) */}
         <div className="space-y-2.5">
+          <h2 className="text-sm font-bold text-slate-300 font-bengali">
+            সদস্য তালিকা ও ম্যানেজার নির্ধারণ
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
           {members.map((m) => {
             const isManager =
               m.firebaseUid === currentHouse.managerFirebaseUid ||
@@ -249,6 +256,7 @@ export default function MembersPage() {
               </GlassCard>
             );
           })}
+          </div>
         </div>
       </main>
 

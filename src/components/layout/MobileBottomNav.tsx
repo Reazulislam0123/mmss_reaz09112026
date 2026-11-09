@@ -23,7 +23,7 @@ export const MobileBottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800/80 pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800/80 pb-safe md:hidden">
       <div className="max-w-md mx-auto flex items-center justify-around px-2 py-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;

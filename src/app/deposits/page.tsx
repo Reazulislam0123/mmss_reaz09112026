@@ -56,7 +56,7 @@ export default function DepositsPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
       <MobileAppHeader />
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
+      <main className="max-w-md md:max-w-6xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-4 sm:space-y-6 pb-28 md:pb-12">
         {/* Header bar */}
         <div className="flex items-center justify-between">
           <div>
@@ -80,8 +80,8 @@ export default function DepositsPage() {
           </button>
         </div>
 
-        {/* Deposits List */}
-        <div className="space-y-2.5">
+        {/* Deposits List (Responsive Grid on Desktop) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5">
           {deposits.length === 0 ? (
             <div className="text-center py-12 text-slate-500 text-xs font-bengali">
               কোনো জমার রেকর্ড পাওয়া যায়নি

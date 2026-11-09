@@ -132,7 +132,7 @@ export default function MealsPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
       <MobileAppHeader />
 
-      <main className="max-w-md mx-auto px-3.5 pt-3 space-y-3.5">
+      <main className="max-w-md md:max-w-6xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-4 sm:space-y-6 pb-28 md:pb-12">
         {/* Top View Selector Tabs: Person Calendar vs All Members Overview */}
         <div className="flex items-center bg-slate-900/80 border border-slate-800 p-1 rounded-2xl">
           <button
@@ -338,8 +338,8 @@ export default function MealsPage() {
               )}
             </div>
 
-            {/* 1 to 31 Daily Meal Cards for Targeted Person */}
-            <div className="space-y-2.5">
+            {/* 1 to 31 Daily Meal Cards for Targeted Person (Responsive Grid on Desktop) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
               {daysArray.map((dateStr) => {
                 const entry = meals.find(
                   (m) => m.date === dateStr && m.firebaseUid === targetMember?.firebaseUid
@@ -378,7 +378,7 @@ export default function MealsPage() {
               </span>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {members.map((m) => {
                 const memberMeals = meals.filter(
                   (rec) => rec.firebaseUid === m.firebaseUid && rec.date.startsWith(selectedMonth)

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useMess } from "../../context/MessContext";
 import BottomDrawer from "../ui/BottomDrawer";
@@ -29,6 +30,7 @@ import {
 
 export const MobileAppHeader: React.FC = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const { mongoUser, logout, joinHouseByCode } = useAuth();
   const {
     currentHouse,
@@ -139,20 +141,31 @@ export const MobileAppHeader: React.FC = () => {
     fullName: mongoUser?.fullName || "সদস্য",
   };
 
+  const desktopNavItems = [
+    { label: "ড্যাশবোর্ড", href: "/dashboard" },
+    { label: "মিল ক্যালেন্ডার", href: "/meals" },
+    { label: "বাজার খরচ", href: "/bazaar" },
+    { label: "টাকা জমা", href: "/deposits" },
+    { label: "ফাইনাল লেজার", href: "/ledger" },
+    { label: "ইউটিলিটি বিল", href: "/fixed-costs" },
+    { label: "ব্যক্তিগত সমন্বয়", href: "/individual-bills" },
+    { label: "মেস সদস্য", href: "/members" },
+  ];
+
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-2.5">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-2">
+      <header className="sticky top-0 z-40 w-full bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-2.5">
+        <div className="max-w-md md:max-w-6xl lg:max-w-7xl mx-auto flex items-center justify-between gap-3">
           {/* House info chip -> Clicking opens Mess & Manager Selection */}
           <button
             onClick={() => setShowHouseDrawer(true)}
-            className="flex items-center gap-2 min-w-0 text-left bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 rounded-2xl px-2.5 py-1.5 active:scale-95 transition-all"
+            className="flex items-center gap-2 min-w-0 text-left bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 rounded-2xl px-2.5 py-1.5 active:scale-95 transition-all shrink-0"
             title="মেস ও ম্যানেজার পরিবর্তন করুন"
           >
             <BrandLogo size="sm" />
             <div className="min-w-0 pr-1">
               <div className="flex items-center gap-1">
-                <h1 className="text-xs font-bold text-slate-100 truncate font-bengali leading-tight max-w-[120px] sm:max-w-[150px]">
+                <h1 className="text-xs font-bold text-slate-100 truncate font-bengali leading-tight max-w-[120px] sm:max-w-[160px]">
                   {currentHouse.name}
                 </h1>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -162,6 +175,26 @@ export const MobileAppHeader: React.FC = () => {
               </span>
             </div>
           </button>
+
+          {/* Desktop Navigation Links (Visible on Laptop & Desktop screens) */}
+          <nav className="hidden md:flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar">
+            {desktopNavItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bengali font-semibold transition-all whitespace-nowrap ${
+                    isActive
+                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm"
+                      : "text-slate-400 hover:text-slate-100 hover:bg-slate-900"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
 
           {/* Right tools: Month selector & Clean User Profile menu */}
           <div className="flex items-center gap-1.5 shrink-0">
@@ -260,7 +293,7 @@ export const MobileAppHeader: React.FC = () => {
         </div>
 
         {/* Rotating 5-6 Days Meal Manager Status Bar */}
-        <div className="max-w-md mx-auto pt-2 border-t border-slate-800/60 mt-2 flex items-center justify-between text-[11px] font-bengali">
+        <div className="max-w-md md:max-w-6xl lg:max-w-7xl mx-auto pt-2 border-t border-slate-800/60 mt-2 flex items-center justify-between text-[11px] font-bengali">
           <button
             onClick={() => setShowRosterDrawer(true)}
             className="w-full flex items-center justify-between bg-gradient-to-r from-amber-500/15 to-amber-500/5 hover:from-amber-500/20 border border-amber-500/30 text-amber-200 px-3 py-1.5 rounded-2xl active:scale-[0.99] transition-all shadow-sm"

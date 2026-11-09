@@ -66,7 +66,7 @@ export default function FixedCostsPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-28 font-bengali">
       <MobileAppHeader />
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
+      <main className="max-w-md md:max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-4 sm:space-y-6 pb-28 md:pb-12">
         {/* Title */}
         <div className="flex items-center justify-between">
           <div>
@@ -113,8 +113,9 @@ export default function FixedCostsPage() {
         )}
 
         {/* Fixed Costs Form */}
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <GlassCard className="p-4 space-y-3.5">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <GlassCard className="p-4 sm:p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Electricity */}
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -222,6 +223,7 @@ export default function FixedCostsPage() {
                 onChange={(e) => setRent(Number(e.target.value))}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 font-english focus:outline-none focus:border-amber-500/50"
               />
+            </div>
             </div>
           </GlassCard>
 
