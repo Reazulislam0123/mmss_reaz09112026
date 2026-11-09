@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const { houseId, dutyManagerUid, dutyStartDate, dutyEndDate, dutyRoster } = await req.json();
+    const { houseId, name, address, managerFirebaseUid, dutyManagerUid, dutyStartDate, dutyEndDate, dutyRoster } = await req.json();
 
     if (!houseId) {
       return NextResponse.json({ error: "houseId is required" }, { status: 400 });
@@ -76,6 +76,9 @@ export async function PUT(req: Request) {
     await connectToDatabase();
 
     const updateFields: any = {};
+    if (name !== undefined) updateFields.name = name.trim();
+    if (address !== undefined) updateFields.address = address.trim();
+    if (managerFirebaseUid !== undefined) updateFields.managerFirebaseUid = managerFirebaseUid;
     if (dutyManagerUid !== undefined) updateFields.dutyManagerUid = dutyManagerUid;
     if (dutyStartDate !== undefined) updateFields.dutyStartDate = dutyStartDate;
     if (dutyEndDate !== undefined) updateFields.dutyEndDate = dutyEndDate;

@@ -1,20 +1,41 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import MobileAppHeader from "../../components/layout/MobileAppHeader";
 import MobileBottomNav from "../../components/layout/MobileBottomNav";
 import GlassCard from "../../components/ui/GlassCard";
 import Badge from "../../components/ui/Badge";
 import { useMess } from "../../context/MessContext";
 import { formatTaka } from "../../utils/formatters";
-import { Users, KeyRound, Copy, Shield, ShieldCheck } from "lucide-react";
+import { Users, KeyRound, Copy, Shield, ShieldCheck, Home, Pencil, Check } from "lucide-react";
 
 export default function MembersPage() {
-  const { currentHouse, members, changeHouseManager } = useMess();
+  const { currentHouse, members, changeHouseManager, updateHouseName } = useMess();
+
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [houseNameInput, setHouseNameInput] = useState(currentHouse.name);
+  const [houseAddressInput, setHouseAddressInput] = useState(currentHouse.address || "");
+  const [savingName, setSavingName] = useState(false);
+  const [successToast, setSuccessToast] = useState("");
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(currentHouse.joinCode);
     alert(`মেস জয়েন কোড (${currentHouse.joinCode}) কপি করা হয়েছে!`);
+  };
+
+  const handleSaveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!houseNameInput.trim()) return;
+    setSavingName(true);
+    const ok = await updateHouseName(houseNameInput.trim(), houseAddressInput.trim());
+    if (ok) {
+      setSuccessToast("মেসের নাম সফলভাবে পরিবর্তন করা হয়েছে!");
+      setTimeout(() => {
+        setSuccessToast("");
+        setIsEditingName(false);
+      }, 1500);
+    }
+    setSavingName(false);
   };
 
   return (
@@ -37,6 +58,97 @@ export default function MembersPage() {
             <Users className="w-4 h-4" />
           </div>
         </div>
+
+        {/* Mess Name & Details Card with 1-Click Inline Edit */}
+        <GlassCard className="p-4 border-slate-800 bg-slate-900/60">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-600 text-slate-950 flex items-center justify-center font-bold">
+                <Home className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[11px] text-slate-400 font-bengali block">বর্তমান মেসের নাম</span>
+                {!isEditingName && (
+                  <h2 className="text-base font-bold text-slate-100 font-bengali leading-tight">
+                    {currentHouse.name}
+                  </h2>
+                )}
+              </div>
+            </div>
+
+            {!isEditingName && (
+              <button
+                type="button"
+                onClick={() => {
+                  setHouseNameInput(currentHouse.name);
+                  setHouseAddressInput(currentHouse.address || "");
+                  setIsEditingName(true);
+                }}
+                className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-bold font-bengali bg-amber-500/10 border border-amber-500/25 px-2.5 py-1 rounded-xl active:scale-95 transition-all"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                <span>নাম পরিবর্তন</span>
+              </button>
+            )}
+          </div>
+
+          {isEditingName ? (
+            <form onSubmit={handleSaveName} className="space-y-3 pt-2 font-bengali">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">মেসের নতুন নাম</label>
+                <input
+                  type="text"
+                  value={houseNameInput}
+                  onChange={(e) => setHouseNameInput(e.target.value)}
+                  required
+                  placeholder="যেমন: ধানমন্ডি স্টার পয়েন্ট"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 font-bold focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">ঠিকানা (ঐচ্ছিক)</label>
+                <input
+                  type="text"
+                  value={houseAddressInput}
+                  onChange={(e) => setHouseAddressInput(e.target.value)}
+                  placeholder="যেমন: রোড ৪, ধানমন্ডি, ঢাকা"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              {successToast && (
+                <div className="text-xs text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  <span>{successToast}</span>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={savingName}
+                  className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold active:scale-95 transition-all disabled:opacity-50 shadow-md shadow-amber-500/20"
+                >
+                  {savingName ? "সংরক্ষণ হচ্ছে..." : "✓ নাম সেভ করুন"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingName(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 active:scale-95 transition-all"
+                >
+                  বাতিল
+                </button>
+              </div>
+            </form>
+          ) : (
+            currentHouse.address && (
+              <p className="text-xs text-slate-400 font-bengali mt-1">
+                ঠিকানা: {currentHouse.address}
+              </p>
+            )
+          )}
+        </GlassCard>
 
         {/* Join Code Card */}
         <GlassCard className="p-4 border-amber-500/30 bg-amber-500/5">

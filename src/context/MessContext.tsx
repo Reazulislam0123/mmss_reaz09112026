@@ -47,6 +47,7 @@ interface MessContextType {
   currentHouse: IHouseData;
   availableHouses: IHouseData[];
   setCurrentHouse: (house: IHouseData) => void;
+  updateHouseName: (newName: string, newAddress?: string) => Promise<boolean>;
   changeHouseManager: (managerUid: string) => Promise<void>;
   createNewHouse: (name: string, address?: string) => Promise<void>;
   dutyManagerUid: string;
@@ -338,6 +339,43 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
   };
 
+  // Update existing mess name and address
+  const updateHouseName = async (newName: string, newAddress?: string): Promise<boolean> => {
+    if (!newName.trim()) return false;
+    const trimmedName = newName.trim();
+    const trimmedAddress = newAddress !== undefined ? newAddress.trim() : currentHouse.address;
+
+    setCurrentHouse((prev) => ({
+      ...prev,
+      name: trimmedName,
+      address: trimmedAddress,
+    }));
+
+    setAvailableHouses((prev) =>
+      prev.map((h) =>
+        h.houseId === currentHouse.houseId
+          ? { ...h, name: trimmedName, address: trimmedAddress }
+          : h
+      )
+    );
+
+    try {
+      const res = await fetch("/api/houses", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          houseId: currentHouse.houseId,
+          name: trimmedName,
+          address: trimmedAddress,
+        }),
+      });
+      return res.ok;
+    } catch (e) {
+      console.error("Failed to update house name:", e);
+      return false;
+    }
+  };
+
   // Create new house
   const createNewHouse = async (name: string, address?: string) => {
     const newH: IHouseData = {
@@ -474,6 +512,7 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
         currentHouse,
         availableHouses,
         setCurrentHouse,
+        updateHouseName,
         changeHouseManager,
         createNewHouse,
         dutyManagerUid,

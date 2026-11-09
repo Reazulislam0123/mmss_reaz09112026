@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Hash,
+  Pencil,
 } from "lucide-react";
 
 export const MobileAppHeader: React.FC = () => {
@@ -33,6 +34,7 @@ export const MobileAppHeader: React.FC = () => {
     currentHouse,
     availableHouses,
     setCurrentHouse,
+    updateHouseName,
     changeHouseManager,
     createNewHouse,
     dutyManagerUid,
@@ -47,6 +49,13 @@ export const MobileAppHeader: React.FC = () => {
   const [showJoinDrawer, setShowJoinDrawer] = useState(false);
   const [showRosterDrawer, setShowRosterDrawer] = useState(false);
   const [showMonthDrawer, setShowMonthDrawer] = useState(false);
+
+  // Editable Mess Name states
+  const [isEditingHouseName, setIsEditingHouseName] = useState(false);
+  const [editedHouseName, setEditedHouseName] = useState(currentHouse.name);
+  const [editedHouseAddress, setEditedHouseAddress] = useState(currentHouse.address || "");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editSuccessMessage, setEditSuccessMessage] = useState("");
 
   // Form states
   const [joinInputCode, setJoinInputCode] = useState("");
@@ -68,6 +77,22 @@ export const MobileAppHeader: React.FC = () => {
     setShowPersonaMenu(false);
     await logout();
     router.push("/login");
+  };
+
+  const handleSaveHouseName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editedHouseName.trim()) return;
+    setEditSaving(true);
+    setEditSuccessMessage("");
+    const ok = await updateHouseName(editedHouseName.trim(), editedHouseAddress.trim());
+    if (ok) {
+      setEditSuccessMessage("মেসের নাম সফলভাবে পরিবর্তন করা হয়েছে!");
+      setTimeout(() => {
+        setEditSuccessMessage("");
+        setIsEditingHouseName(false);
+      }, 1500);
+    }
+    setEditSaving(false);
   };
 
   const handleJoinSubmit = async (e: React.FormEvent) => {
@@ -314,10 +339,105 @@ export const MobileAppHeader: React.FC = () => {
       {/* Mess Selection & Manager Assignment Drawer */}
       <BottomDrawer
         isOpen={showHouseDrawer}
-        onClose={() => setShowHouseDrawer(false)}
+        onClose={() => {
+          setShowHouseDrawer(false);
+          setIsEditingHouseName(false);
+        }}
         title="মেস ও ম্যানেজার ব্যবস্থাপনা"
       >
         <div className="space-y-5 font-bengali">
+          {/* Active House Name with 1-Click Inline Edit Form */}
+          <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Home className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold text-slate-200">
+                  বর্তমান মেসের তথ্য:
+                </span>
+              </div>
+              {!isEditingHouseName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditedHouseName(currentHouse.name);
+                    setEditedHouseAddress(currentHouse.address || "");
+                    setIsEditingHouseName(true);
+                  }}
+                  className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl active:scale-95 transition-all"
+                >
+                  <Pencil className="w-3 h-3" />
+                  <span>নাম পরিবর্তন</span>
+                </button>
+              )}
+            </div>
+
+            {isEditingHouseName ? (
+              <form onSubmit={handleSaveHouseName} className="space-y-2.5 pt-1">
+                <div>
+                  <label className="text-[11px] text-slate-400 block mb-1">
+                    মেসের নতুন নাম লিখুন
+                  </label>
+                  <input
+                    type="text"
+                    value={editedHouseName}
+                    onChange={(e) => setEditedHouseName(e.target.value)}
+                    required
+                    placeholder="যেমন: ধানমন্ডি স্টার পয়েন্ট"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-semibold focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-slate-400 block mb-1">
+                    ঠিকানা (ঐচ্ছিক)
+                  </label>
+                  <input
+                    type="text"
+                    value={editedHouseAddress}
+                    onChange={(e) => setEditedHouseAddress(e.target.value)}
+                    placeholder="যেমন: রোড ৪, ধানমন্ডি, ঢাকা"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                {editSuccessMessage && (
+                  <div className="text-[11px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                    ✓ {editSuccessMessage}
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="submit"
+                    disabled={editSaving}
+                    className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold active:scale-95 transition-all disabled:opacity-50 shadow-md shadow-amber-500/20"
+                  >
+                    {editSaving ? "সংরক্ষণ হচ্ছে..." : "✓ নাম সেভ করুন"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingHouseName(false)}
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 active:scale-95 transition-all"
+                  >
+                    বাতিল
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div>
+                <div className="font-bold text-sm text-slate-100">
+                  {currentHouse.name}
+                </div>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  কোড: <span className="font-mono text-amber-400 font-bold">{currentHouse.joinCode}</span>{" "}
+                  {currentHouse.address && (
+                    <span className="text-slate-500">| {currentHouse.address}</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Quick Button to Join Another Mess */}
           <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-2xl flex items-center justify-between">
             <div>
