@@ -46,10 +46,15 @@ export default function MembersPage() {
                 <KeyRound className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs text-slate-400 font-bengali block">মেস জয়েন কোড</span>
-                <span className="font-mono text-base font-bold text-amber-400 tracking-wider">
-                  {currentHouse.joinCode}
-                </span>
+                <span className="text-xs text-slate-400 font-bengali block">মেস জয়েন কোড ও হাউস আইডি</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-mono text-base font-bold text-amber-400 tracking-wider">
+                    {currentHouse.joinCode}
+                  </span>
+                  <span className="font-mono text-[11px] text-slate-400">
+                    ID: {currentHouse.houseId}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -62,7 +67,7 @@ export default function MembersPage() {
             </button>
           </div>
           <p className="text-[11px] text-slate-400 font-bengali mt-2">
-            নতুন সদস্যরা এই কোডটি দিয়ে সরাসরি আপনার মেসে যুক্ত হতে পারবে।
+            নতুন সদস্যরা এই জয়েন কোড (<span className="font-mono text-amber-300">{currentHouse.joinCode}</span>) বা ইউনিক আইডি (<span className="font-mono text-slate-300">{currentHouse.houseId}</span>) দিয়ে সরাসরি আপনার মেসে যুক্ত হতে পারবে।
           </p>
         </GlassCard>
 

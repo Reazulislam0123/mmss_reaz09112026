@@ -13,7 +13,18 @@ import StepperControl from "../../components/ui/StepperControl";
 import { useAuth } from "../../context/AuthContext";
 import { useMess } from "../../context/MessContext";
 import { formatTaka, toBengaliNumeral, getCurrentDate } from "../../utils/formatters";
-import { Utensils, ShoppingCart, Coins, Calculator, ArrowRight, ChefHat } from "lucide-react";
+import {
+  Utensils,
+  ShoppingCart,
+  Coins,
+  Calculator,
+  ArrowRight,
+  ChefHat,
+  Wallet,
+  Zap,
+  FileEdit,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -143,8 +154,8 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Quick Hub Navigation Shortcuts */}
-        <div className="grid grid-cols-4 gap-2 pt-1 pb-1">
+        {/* Quick Hub Navigation Shortcuts (6 Modules) */}
+        <div className="grid grid-cols-3 gap-2 pt-1 pb-1">
           <Link
             href="/meals"
             className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center active:scale-95 transition-all"
@@ -162,27 +173,47 @@ export default function DashboardPage() {
             <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-1">
               <ShoppingCart className="w-4 h-4" />
             </div>
-            <span className="text-[11px] font-semibold text-slate-200 font-bengali">বাজার</span>
+            <span className="text-[11px] font-semibold text-slate-200 font-bengali">বাজার খরচ</span>
+          </Link>
+
+          <Link
+            href="/deposits"
+            className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center active:scale-95 transition-all"
+          >
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center mb-1">
+              <Wallet className="w-4 h-4" />
+            </div>
+            <span className="text-[11px] font-semibold text-slate-200 font-bengali">টাকা জমা</span>
           </Link>
 
           <Link
             href="/fixed-costs"
             className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center active:scale-95 transition-all"
           >
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center mb-1">
-              <Calculator className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-300 flex items-center justify-center mb-1">
+              <Zap className="w-4 h-4" />
             </div>
-            <span className="text-[11px] font-semibold text-slate-200 font-bengali">ইউটিলিটি</span>
+            <span className="text-[11px] font-semibold text-slate-200 font-bengali">ইউটিলিটি বিল</span>
+          </Link>
+
+          <Link
+            href="/individual-bills"
+            className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center active:scale-95 transition-all"
+          >
+            <div className="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center mb-1">
+              <FileEdit className="w-4 h-4" />
+            </div>
+            <span className="text-[11px] font-semibold text-slate-200 font-bengali">ব্যক্তিগত সমন্বয়</span>
           </Link>
 
           <Link
             href="/members"
             className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center active:scale-95 transition-all"
           >
-            <div className="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center mb-1">
-              <Coins className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center mb-1">
+              <Users className="w-4 h-4" />
             </div>
-            <span className="text-[11px] font-semibold text-slate-200 font-bengali">সদস্য</span>
+            <span className="text-[11px] font-semibold text-slate-200 font-bengali">মেস সদস্য</span>
           </Link>
         </div>
 

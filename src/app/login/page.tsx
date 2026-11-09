@@ -10,7 +10,7 @@ import { LogIn, Sparkles, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loginWithGoogle, switchDemoPersona } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -119,35 +119,6 @@ export default function LoginPage() {
           >
             <span>Google অ্যাকাউন্ট দিয়ে প্রবেশ করুন</span>
           </button>
-
-          {/* Quick Demo Mode Persona Buttons */}
-          <div className="mt-5 pt-4 border-t border-slate-800/80 text-center">
-            <span className="text-[11px] text-slate-400 font-bengali block mb-2">
-              ⚡ এক ক্লিকে ডেমো মোডে প্রবেশ করুন:
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  switchDemoPersona("UID_ADMIN_01");
-                  router.push("/dashboard");
-                }}
-                className="py-2 px-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bengali hover:bg-amber-500/20 active:scale-95 transition-all truncate"
-              >
-                👑 ম্যানেজার ডেমো
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  switchDemoPersona("UID_MEMBER_02");
-                  router.push("/dashboard");
-                }}
-                className="py-2 px-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bengali hover:bg-slate-700 active:scale-95 transition-all truncate"
-              >
-                👤 মেম্বার ডেমো
-              </button>
-            </div>
-          </div>
         </GlassCard>
 
         <p className="text-center text-xs text-slate-400 font-bengali">

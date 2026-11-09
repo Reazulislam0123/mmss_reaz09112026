@@ -10,7 +10,6 @@ import {
   User as FirebaseUser,
 } from "firebase/auth";
 import { auth, googleProvider } from "../lib/firebase/client";
-import { MOCK_USERS } from "../lib/mockData";
 
 export interface IMongoUser {
   firebaseUid: string;
@@ -31,7 +30,7 @@ interface AuthContextType {
   register: (email: string, pass: string, name: string, joinCode?: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
-  switchDemoPersona: (uid: string) => void;
+  joinHouseByCode: (code: string) => Promise<{ success: boolean; message: string }>;
   isDemoMode: boolean;
 }
 
@@ -39,11 +38,11 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [mongoUser, setMongoUser] = useState<IMongoUser | null>(MOCK_USERS[0] as IMongoUser);
+  const [mongoUser, setMongoUser] = useState<IMongoUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
 
-  // Sync user with database
+  // Sync user with MongoDB database
   const syncWithDatabase = async (fbUser: FirebaseUser) => {
     try {
       const res = await fetch("/api/auth/sync-user", {
@@ -64,7 +63,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch (e) {
-      console.warn("Could not sync with MongoDB, falling back to local state:", e);
+      console.warn("Could not sync with MongoDB:", e);
+      setMongoUser({
+        firebaseUid: fbUser.uid,
+        email: fbUser.email || "",
+        fullName: fbUser.displayName || "সদস্য",
+        role: "member",
+      });
+      setIsDemoMode(false);
     }
   };
 
@@ -77,13 +83,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setFirebaseUser(user);
+        setIsDemoMode(false);
         await syncWithDatabase(user);
       } else {
-        // Fallback to initial demo persona for instant UI readiness
         setFirebaseUser(null);
-        if (!mongoUser) {
-          setMongoUser(MOCK_USERS[0] as IMongoUser);
-        }
+        setMongoUser(null);
+        setIsDemoMode(false);
       }
       setLoading(false);
     });
@@ -96,17 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (auth) {
         const cred = await signInWithEmailAndPassword(auth, email, pass);
+        setIsDemoMode(false);
         await syncWithDatabase(cred.user);
       }
     } catch (err: any) {
-      // If Firebase fails or is in placeholder mode, match with mock persona
-      const mockMatch = MOCK_USERS.find((u) => u.email === email);
-      if (mockMatch) {
-        setMongoUser(mockMatch as IMongoUser);
-        setIsDemoMode(true);
-      } else {
-        throw new Error(err.message || "লগইন ব্যর্থ হয়েছে");
-      }
+      throw new Error(err.message || "লগইন ব্যর্থ হয়েছে");
     } finally {
       setLoading(false);
     }
@@ -117,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (auth) {
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        setIsDemoMode(false);
         const res = await fetch("/api/auth/sync-user", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -133,16 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch (err: any) {
-      // Mock registration fallback
-      const newUser: IMongoUser = {
-        firebaseUid: `UID_NEW_${Date.now()}`,
-        email,
-        fullName: name,
-        role: "member",
-        houseId: "HOUSE_DHAKA_01",
-      };
-      setMongoUser(newUser);
-      setIsDemoMode(true);
+      throw new Error(err.message || "নিবন্ধন ব্যর্থ হয়েছে");
     } finally {
       setLoading(false);
     }
@@ -153,12 +144,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (auth) {
         const cred = await signInWithPopup(auth, googleProvider);
+        setIsDemoMode(false);
         await syncWithDatabase(cred.user);
       }
-    } catch (err) {
-      console.warn("Google sign-in fallback:", err);
-      setMongoUser(MOCK_USERS[0] as IMongoUser);
-      setIsDemoMode(true);
+    } catch (err: any) {
+      throw new Error(err.message || "গুগল লগইন সম্পন্ন করা যায়নি");
     } finally {
       setLoading(false);
     }
@@ -172,13 +162,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setFirebaseUser(null);
     setMongoUser(null);
+    setIsDemoMode(false);
   };
 
-  const switchDemoPersona = (uid: string) => {
-    const target = MOCK_USERS.find((u) => u.firebaseUid === uid);
-    if (target) {
-      setMongoUser(target as IMongoUser);
-      setIsDemoMode(true);
+  const joinHouseByCode = async (code: string) => {
+    if (!firebaseUser && !mongoUser) {
+      return { success: false, message: "অনুগ্রহ করে প্রথমে লগইন করুন" };
+    }
+    const uid = firebaseUser?.uid || mongoUser?.firebaseUid;
+
+    try {
+      const res = await fetch("/api/houses/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firebaseUid: uid,
+          code,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, message: data.error || "মেসে যুক্ত হওয়া যায়নি" };
+      }
+
+      if (data.user) {
+        setMongoUser(data.user);
+      }
+      return { success: true, message: data.message || "সফলভাবে মেসে যুক্ত হয়েছেন!" };
+    } catch (err: any) {
+      return { success: false, message: err.message || "সার্ভার এরর" };
     }
   };
 
@@ -192,7 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         loginWithGoogle,
         logout,
-        switchDemoPersona,
+        joinHouseByCode,
         isDemoMode,
       }}
     >
@@ -203,4 +216,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => useContext(AuthContext);
 export default AuthContext;
-

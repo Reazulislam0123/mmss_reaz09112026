@@ -132,11 +132,11 @@ export default function RegisterPage() {
             {tab === "join" ? (
               <div>
                 <label className="text-xs text-slate-400 font-bengali block mb-1">
-                  মেসের জয়েন কোড (ম্যানেজার থেকে সংগ্রহ করুন)
+                  মেস জয়েন কোড অথবা ইউনিক হাউস আইডি
                 </label>
                 <input
                   type="text"
-                  placeholder="যেমন: MMS-7K2X"
+                  placeholder="যেমন: MMS-7K2X বা HOUSE_01"
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value)}
                   required

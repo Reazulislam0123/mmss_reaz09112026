@@ -35,7 +35,14 @@ export async function POST(req: Request) {
       let userRole: "super_admin" | "manager" | "member" = "member";
 
       if (joinCode) {
-        const foundHouse = await House.findOne({ joinCode: joinCode.trim().toUpperCase() });
+        const cleanCode = joinCode.trim();
+        const foundHouse = await House.findOne({
+          $or: [
+            { joinCode: cleanCode.toUpperCase() },
+            { houseId: cleanCode },
+            { houseId: cleanCode.toUpperCase() },
+          ],
+        });
         if (foundHouse) {
           assignedHouseId = foundHouse.houseId;
         }

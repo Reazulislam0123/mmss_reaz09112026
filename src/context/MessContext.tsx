@@ -292,11 +292,14 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAvailableHouses(housesRes.value.houses);
         const currentServerHouse = housesRes.value.houses.find(
           (h: any) => h.houseId === currentHouse.houseId
-        );
-        if (currentServerHouse?.dutyManagerUid) {
-          setDutyManagerUid(currentServerHouse.dutyManagerUid);
-          setDutyStartDate(currentServerHouse.dutyStartDate || "");
-          setDutyEndDate(currentServerHouse.dutyEndDate || "");
+        ) || housesRes.value.houses[0];
+        if (currentServerHouse) {
+          setCurrentHouse(currentServerHouse);
+          if (currentServerHouse.dutyManagerUid) {
+            setDutyManagerUid(currentServerHouse.dutyManagerUid);
+            setDutyStartDate(currentServerHouse.dutyStartDate || "");
+            setDutyEndDate(currentServerHouse.dutyEndDate || "");
+          }
         }
       }
     } catch (e) {
@@ -305,6 +308,11 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
   }, [currentHouse.houseId, selectedMonth]);
+
+  // Automatically refresh live data on load and when house/month changes
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
   // Re-assign Mess Overall House Admin
   const changeHouseManager = async (managerUid: string) => {

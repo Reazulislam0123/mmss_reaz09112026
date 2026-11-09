@@ -4,30 +4,29 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useMess } from "../../context/MessContext";
-import { MOCK_USERS } from "../../lib/mockData";
 import BottomDrawer from "../ui/BottomDrawer";
 import BrandLogo from "../ui/BrandLogo";
 import MealManagerRosterDrawer from "../meals/MealManagerRosterDrawer";
 import {
   Building2,
   Calendar,
-  UserCheck,
-  Shield,
   ChevronDown,
   LogOut,
-  LogIn,
   Plus,
   KeyRound,
   Check,
   UserCog,
-  Sparkles,
   ChefHat,
   RotateCw,
+  Home,
+  CheckCircle2,
+  AlertCircle,
+  Hash,
 } from "lucide-react";
 
 export const MobileAppHeader: React.FC = () => {
   const router = useRouter();
-  const { mongoUser, switchDemoPersona, isDemoMode, logout } = useAuth();
+  const { mongoUser, logout, joinHouseByCode } = useAuth();
   const {
     currentHouse,
     availableHouses,
@@ -35,17 +34,24 @@ export const MobileAppHeader: React.FC = () => {
     changeHouseManager,
     createNewHouse,
     dutyManagerUid,
-    dutyStartDate,
-    dutyEndDate,
     members,
     selectedMonth,
     setSelectedMonth,
+    refreshData,
   } = useMess();
 
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [showHouseDrawer, setShowHouseDrawer] = useState(false);
+  const [showJoinDrawer, setShowJoinDrawer] = useState(false);
   const [showRosterDrawer, setShowRosterDrawer] = useState(false);
+
+  // Form states
+  const [joinInputCode, setJoinInputCode] = useState("");
+  const [joinLoading, setJoinLoading] = useState(false);
+  const [joinMessage, setJoinMessage] = useState<{ text: string; error?: boolean } | null>(null);
+
   const [newHouseName, setNewHouseName] = useState("");
+  const [newHouseAddress, setNewHouseAddress] = useState("");
   const [showNewHouseForm, setShowNewHouseForm] = useState(false);
 
   // Available months list for picker (current year)
@@ -61,16 +67,46 @@ export const MobileAppHeader: React.FC = () => {
     router.push("/login");
   };
 
+  const handleJoinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!joinInputCode.trim()) return;
+
+    setJoinLoading(true);
+    setJoinMessage(null);
+
+    const res = await joinHouseByCode(joinInputCode.trim());
+    if (res.success) {
+      setJoinMessage({ text: res.message });
+      setJoinInputCode("");
+      await refreshData();
+      setTimeout(() => {
+        setJoinMessage(null);
+        setShowJoinDrawer(false);
+      }, 2000);
+    } else {
+      setJoinMessage({ text: res.message, error: true });
+    }
+    setJoinLoading(false);
+  };
+
   const handleCreateHouse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newHouseName) return;
-    await createNewHouse(newHouseName);
+    await createNewHouse(newHouseName, newHouseAddress);
     setNewHouseName("");
+    setNewHouseAddress("");
     setShowNewHouseForm(false);
     setShowHouseDrawer(false);
   };
 
-  const currentManager = members.find((m) => m.role === "manager") || members[0];
+  const currentManager = members.find((m) => m.role === "manager") || members[0] || {
+    fullName: mongoUser?.fullName || "ম্যানেজার",
+    roomNo: mongoUser?.roomNo || "N/A",
+  };
+
+  const activeDutyManager = members.find((m) => m.firebaseUid === dutyManagerUid) || members[0] || {
+    fullName: mongoUser?.fullName || "সদস্য",
+  };
 
   return (
     <>
@@ -79,7 +115,7 @@ export const MobileAppHeader: React.FC = () => {
           {/* House info chip -> Clicking opens Mess & Manager Selection */}
           <button
             onClick={() => setShowHouseDrawer(true)}
-            className="flex items-center gap-2 min-w-0 text-left bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 rounded-2xl px-2 py-1.5 active:scale-95 transition-all"
+            className="flex items-center gap-2 min-w-0 text-left bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 rounded-2xl px-2.5 py-1.5 active:scale-95 transition-all"
             title="মেস ও ম্যানেজার পরিবর্তন করুন"
           >
             <BrandLogo size="sm" />
@@ -91,12 +127,12 @@ export const MobileAppHeader: React.FC = () => {
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               </div>
               <span className="text-[10px] text-amber-400 font-mono tracking-wider block">
-                {currentHouse.joinCode}
+                {currentHouse.joinCode || currentHouse.houseId}
               </span>
             </div>
           </button>
 
-          {/* Right tools: Month selector & User profile/Logout menu */}
+          {/* Right tools: Month selector & Clean User Profile menu */}
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Month Picker dropdown */}
             <div className="relative flex items-center bg-slate-900 border border-slate-800 rounded-xl px-2 py-1.5">
@@ -114,12 +150,12 @@ export const MobileAppHeader: React.FC = () => {
               </select>
             </div>
 
-            {/* User profile persona avatar -> Clicking opens Profile & Logout Drawer */}
+            {/* User profile persona avatar -> Clean Profile Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setShowPersonaMenu(!showPersonaMenu)}
                 className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-1.5 active:scale-95 transition-transform"
-                title="প্রোফাইল ও লগআউট"
+                title="প্রোফাইল মেনু"
               >
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
                   {mongoUser?.fullName ? mongoUser.fullName.charAt(0) : "ম"}
@@ -127,14 +163,14 @@ export const MobileAppHeader: React.FC = () => {
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
 
-              {/* Profile & Logout Dropdown Menu */}
+              {/* Clean Profile Dropdown (No Demo Personas) */}
               {showPersonaMenu && (
                 <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 font-bengali">
                   {/* Current User Card */}
-                  <div className="p-2.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 mb-2">
+                  <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/80 mb-2.5">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-slate-100 truncate">
-                        {mongoUser?.fullName || "অতিথি ব্যবহারকারী"}
+                        {mongoUser?.fullName || "ব্যবহারকারী"}
                       </span>
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -149,62 +185,41 @@ export const MobileAppHeader: React.FC = () => {
                     <div className="text-[11px] text-slate-400 truncate font-english">
                       {mongoUser?.email}
                     </div>
-                    {mongoUser?.roomNo && (
-                      <div className="text-[10px] text-slate-500 mt-0.5">
-                        রুম নং: {mongoUser.roomNo}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Switch Demo Persona Quick List */}
-                  <div className="border-t border-slate-800 pt-2 mb-2">
-                    <div className="text-[10px] font-semibold text-slate-400 px-1 mb-1.5 flex items-center justify-between">
-                      <span>সুইচ প্রোফাইল / ভূমিকা</span>
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                    </div>
-                    <div className="space-y-1">
-                      {MOCK_USERS.map((u) => (
-                        <button
-                          key={u.firebaseUid}
-                          onClick={() => {
-                            switchDemoPersona(u.firebaseUid);
-                            setShowPersonaMenu(false);
-                          }}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center justify-between transition-colors ${
-                            mongoUser?.firebaseUid === u.firebaseUid
-                              ? "bg-amber-500/15 text-amber-300 font-semibold"
-                              : "text-slate-300 hover:bg-slate-800"
-                          }`}
-                        >
-                          <div className="truncate">
-                            <span className="truncate">{u.fullName}</span>
-                          </div>
-                          {u.role === "manager" ? (
-                            <Shield className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-1" />
-                          ) : (
-                            <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
-                          )}
-                        </button>
-                      ))}
+                    <div className="mt-1.5 pt-1.5 border-t border-slate-850 flex items-center justify-between text-[10px] text-slate-400">
+                      <span>বর্তমান মেস:</span>
+                      <span className="font-semibold text-amber-300 truncate max-w-[120px]">
+                        {currentHouse.name}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Login / Logout Options */}
-                  <div className="border-t border-slate-800 pt-2 space-y-1">
+                  {/* Clean Action Links */}
+                  <div className="space-y-1">
                     <button
                       onClick={() => {
                         setShowPersonaMenu(false);
-                        router.push("/login");
+                        setShowJoinDrawer(true);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl text-xs text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 flex items-center gap-2 transition-colors font-medium"
+                    >
+                      <KeyRound className="w-4 h-4 text-amber-400" />
+                      <span>মেস কোড/আইডি দিয়ে যোগ দিন</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowPersonaMenu(false);
+                        setShowHouseDrawer(true);
                       }}
                       className="w-full text-left px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-800 flex items-center gap-2 transition-colors"
                     >
-                      <LogIn className="w-4 h-4 text-slate-400" />
-                      <span>লগইন পেজে যান</span>
+                      <Building2 className="w-4 h-4 text-slate-400" />
+                      <span>মেস ও ম্যানেজার সেটিংস</span>
                     </button>
 
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left px-3 py-2 rounded-xl text-xs text-rose-400 hover:bg-rose-500/15 flex items-center gap-2 transition-colors font-semibold"
+                      className="w-full text-left px-3 py-2 rounded-xl text-xs text-rose-400 hover:bg-rose-500/15 flex items-center gap-2 transition-colors font-semibold border-t border-slate-800 pt-2 mt-1"
                     >
                       <LogOut className="w-4 h-4 text-rose-400" />
                       <span>লগআউট করুন (Sign Out)</span>
@@ -230,7 +245,7 @@ export const MobileAppHeader: React.FC = () => {
               <span className="truncate">
                 চলতি মিল ম্যানেজার:{" "}
                 <strong className="text-amber-300 font-bold">
-                  {members.find((m) => m.firebaseUid === dutyManagerUid)?.fullName || "শাকিল হোসেন"}
+                  {activeDutyManager.fullName}
                 </strong>
               </span>
             </div>
@@ -242,6 +257,60 @@ export const MobileAppHeader: React.FC = () => {
         </div>
       </header>
 
+      {/* Join Any Mess by Code or Unique House ID Drawer */}
+      <BottomDrawer
+        isOpen={showJoinDrawer}
+        onClose={() => setShowJoinDrawer(false)}
+        title="মেসে যুক্ত হোন (Join Mess)"
+      >
+        <div className="space-y-4 font-bengali">
+          <p className="text-xs text-slate-400 leading-relaxed">
+            যেকোনো মেসে যুক্ত হতে মেস ম্যানেজারের দেওয়া <strong>৬ অক্ষরের জয়েন কোড</strong> (যেমন: <code className="text-amber-400 font-mono">MMS-7K2X</code>) অথবা <strong>ইউনিক হাউস আইডি</strong> লিখুন।
+          </p>
+
+          {joinMessage && (
+            <div
+              className={`p-3 rounded-2xl text-xs flex items-center gap-2 ${
+                joinMessage.error
+                  ? "bg-rose-500/15 border border-rose-500/30 text-rose-300"
+                  : "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
+              }`}
+            >
+              {joinMessage.error ? (
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+              )}
+              <span>{joinMessage.text}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleJoinSubmit} className="space-y-3">
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">
+                মেস জয়েন কোড অথবা ইউনিক হাউস আইডি
+              </label>
+              <input
+                type="text"
+                placeholder="যেমন: MMS-7K2X বা HOUSE_01"
+                value={joinInputCode}
+                onChange={(e) => setJoinInputCode(e.target.value)}
+                required
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-amber-400 font-mono tracking-wider focus:outline-none focus:border-amber-500/50 uppercase"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={joinLoading}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
+            >
+              {joinLoading ? "যুক্ত হওয়া হচ্ছে..." : "মেসে জয়েন করুন"}
+            </button>
+          </form>
+        </div>
+      </BottomDrawer>
+
       {/* Mess Selection & Manager Assignment Drawer */}
       <BottomDrawer
         isOpen={showHouseDrawer}
@@ -249,6 +318,23 @@ export const MobileAppHeader: React.FC = () => {
         title="মেস ও ম্যানেজার ব্যবস্থাপনা"
       >
         <div className="space-y-5 font-bengali">
+          {/* Quick Button to Join Another Mess */}
+          <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-2xl flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-slate-200 block">অন্য মেসে জয়েন করতে চান?</span>
+              <span className="text-[10px] text-slate-400">কোড বা আইডি দিয়ে যুক্ত হোন</span>
+            </div>
+            <button
+              onClick={() => {
+                setShowHouseDrawer(false);
+                setShowJoinDrawer(true);
+              }}
+              className="bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs px-3 py-1.5 rounded-xl font-bold active:scale-95 transition-all"
+            >
+              কোড দিয়ে জয়েন
+            </button>
+          </div>
+
           {/* Active House Selection */}
           <div>
             <div className="text-xs font-bold text-slate-300 mb-2 flex items-center justify-between">
@@ -283,8 +369,8 @@ export const MobileAppHeader: React.FC = () => {
                         )}
                       </div>
                       <div className="text-[11px] text-slate-400 mt-0.5">
-                        জয়েন কোড: <span className="font-mono text-amber-400">{h.joinCode}</span>{" "}
-                        {h.address && `• ${h.address}`}
+                        কোড: <span className="font-mono text-amber-400">{h.joinCode}</span>{" "}
+                        {h.houseId && <span className="font-mono text-slate-500">({h.houseId})</span>}
                       </div>
                     </div>
                     {isSelected && <Check className="w-4 h-4 text-amber-400 shrink-0" />}
@@ -307,7 +393,6 @@ export const MobileAppHeader: React.FC = () => {
               <span className="font-bold text-amber-400 font-bengali">
                 {currentManager.fullName}
               </span>
-              । অন্য কাউকে ম্যানেজার বানাতে নিচে থেকে নির্বাচন করুন:
             </p>
 
             <div className="space-y-1.5">
@@ -350,19 +435,33 @@ export const MobileAppHeader: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="যেমন: ধানমন্ডি স্টার পয়েন্ট"
+                  placeholder="যেমন: মিরপুর স্টার পয়েন্ট"
                   value={newHouseName}
                   onChange={(e) => setNewHouseName(e.target.value)}
                   required
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500/50"
                 />
               </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">
+                  ঠিকানা (ঐচ্ছিক)
+                </label>
+                <input
+                  type="text"
+                  placeholder="যেমন: রোড ৩, মিরপুর ১০"
+                  value={newHouseAddress}
+                  onChange={(e) => setNewHouseAddress(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500/50"
+                />
+              </div>
+
               <div className="flex gap-2">
                 <button
                   type="submit"
                   className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs"
                 >
-                  তৈরি করুন
+                  মেস তৈরি করুন
                 </button>
                 <button
                   type="button"
@@ -384,6 +483,7 @@ export const MobileAppHeader: React.FC = () => {
           )}
         </div>
       </BottomDrawer>
+
       {/* Rotating Meal Manager Schedule & Handover Drawer */}
       <MealManagerRosterDrawer
         isOpen={showRosterDrawer}
