@@ -1,0 +1,22 @@
+{
+  "name": "Smart MMS - মেস ম্যানেজার",
+  "short_name": "Smart MMS",
+  "description": "ব্যাচেলর মেস ও হোস্টেল মিল ও খরচের ডিজিটাল হিসাব",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "icons": [
+    {
+      "src": "/icons/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
