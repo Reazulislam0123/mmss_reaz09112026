@@ -127,10 +127,13 @@ export const MobileAppHeader: React.FC = () => {
     setShowHouseDrawer(false);
   };
 
-  const currentManager = members.find((m) => m.role === "manager") || members[0] || {
-    fullName: mongoUser?.fullName || "ম্যানেজার",
-    roomNo: mongoUser?.roomNo || "N/A",
-  };
+  const currentManager =
+    members.find((m) => m.firebaseUid === currentHouse.managerFirebaseUid) ||
+    members.find((m) => m.role === "manager") ||
+    members[0] || {
+      fullName: mongoUser?.fullName || "ম্যানেজার",
+      roomNo: mongoUser?.roomNo || "N/A",
+    };
 
   const activeDutyManager = members.find((m) => m.firebaseUid === dutyManagerUid) || members[0] || {
     fullName: mongoUser?.fullName || "সদস্য",
@@ -517,28 +520,38 @@ export const MobileAppHeader: React.FC = () => {
 
             <div className="space-y-1.5">
               {members.map((m) => {
-                const isManager = m.role === "manager";
+                const isHouseManager =
+                  m.firebaseUid === currentHouse.managerFirebaseUid ||
+                  (m.role === "manager" && !members.some((x) => x.firebaseUid === currentHouse.managerFirebaseUid));
                 return (
                   <button
                     key={m.firebaseUid}
-                    onClick={() => changeHouseManager(m.firebaseUid)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-all ${
-                      isManager
-                        ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold"
-                        : "bg-slate-900 border border-slate-800/80 text-slate-300 hover:bg-slate-850"
+                    onClick={() => {
+                      if (!isHouseManager) {
+                        changeHouseManager(m.firebaseUid);
+                      }
+                    }}
+                    disabled={isHouseManager}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-all ${
+                      isHouseManager
+                        ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold cursor-default"
+                        : "bg-slate-900 border border-slate-800/80 text-slate-300 hover:bg-slate-800 active:scale-98"
                     }`}
                   >
-                    <span>
-                      {m.fullName} (রুম {m.roomNo})
+                    <span className="flex items-center gap-1.5">
+                      <span>{m.fullName}</span>
+                      <span className="text-slate-500 font-english">
+                        {m.roomNo ? `(রুম ${m.roomNo})` : ""}
+                      </span>
                     </span>
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full ${
-                        isManager
-                          ? "bg-amber-500 text-slate-950 font-black"
-                          : "bg-slate-800 text-slate-400"
+                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 ${
+                        isHouseManager
+                          ? "bg-amber-500 text-slate-950 font-black shadow-sm"
+                          : "bg-slate-800 text-slate-300 hover:bg-amber-500/20 hover:text-amber-300"
                       }`}
                     >
-                      {isManager ? "ম্যানেজার" : "ম্যানেজার করুন"}
+                      {isHouseManager ? "👑 বর্তমান ম্যানেজার" : "ম্যানেজার করুন"}
                     </span>
                   </button>
                 );

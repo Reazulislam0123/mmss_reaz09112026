@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb/client";
 import User from "@/lib/mongodb/models/User";
+import House from "@/lib/mongodb/models/House";
 import Permission from "@/lib/mongodb/models/Permission";
 
 export async function GET(req: Request) {
@@ -62,6 +63,19 @@ export async function PUT(req: Request) {
       if (role !== undefined) userUpdate.role = role;
 
       await User.findOneAndUpdate({ firebaseUid }, userUpdate);
+
+      // Enforce SINGLE MANAGER per mess:
+      // If a user is promoted to manager, automatically demote all other members in that mess to "member"
+      if (role === "manager" && houseId) {
+        await User.updateMany(
+          { houseId, firebaseUid: { $ne: firebaseUid } },
+          { $set: { role: "member" } }
+        );
+        await House.findOneAndUpdate(
+          { houseId },
+          { $set: { managerFirebaseUid: firebaseUid } }
+        );
+      }
 
       if (permissions && houseId) {
         await Permission.findOneAndUpdate(

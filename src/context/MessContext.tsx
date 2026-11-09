@@ -336,6 +336,7 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: "manager",
         }),
       });
+      await refreshData();
     } catch (e) {}
   };
 

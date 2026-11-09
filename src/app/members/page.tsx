@@ -186,7 +186,9 @@ export default function MembersPage() {
         {/* Members Roster with Manager Selection */}
         <div className="space-y-2.5">
           {members.map((m) => {
-            const isManager = m.role === "manager";
+            const isManager =
+              m.firebaseUid === currentHouse.managerFirebaseUid ||
+              (m.role === "manager" && !members.some((x) => x.firebaseUid === currentHouse.managerFirebaseUid));
             return (
               <GlassCard key={m.firebaseUid} className="p-3.5">
                 <div className="flex items-center justify-between">
@@ -217,11 +219,16 @@ export default function MembersPage() {
 
                     {/* Manager selection button */}
                     <button
-                      onClick={() => changeHouseManager(m.firebaseUid)}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bengali flex items-center gap-1 active:scale-95 transition-all ${
+                      onClick={() => {
+                        if (!isManager) {
+                          changeHouseManager(m.firebaseUid);
+                        }
+                      }}
+                      disabled={isManager}
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bengali flex items-center gap-1 transition-all ${
                         isManager
-                          ? "bg-amber-500 text-slate-950 font-bold"
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          ? "bg-amber-500 text-slate-950 font-bold cursor-default"
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700 active:scale-95"
                       }`}
                       title={isManager ? "বর্তমান ম্যানেজার" : "ইনাকে ম্যানেজার নির্বাচন করুন"}
                     >
