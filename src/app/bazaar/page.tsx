@@ -95,6 +95,7 @@ export default function BazaarPage() {
                   itemDetails={b.itemDetails}
                   category={b.category}
                   cost={b.cost}
+                  items={b.items}
                   paidByName={payer?.fullName || "মেস ফান্ড"}
                   canDelete={canManage || b.paidByUid === mongoUser?.firebaseUid}
                   onDelete={() => b._id && deleteBazaarEntry(b._id)}

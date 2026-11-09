@@ -28,9 +28,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { houseId, date, month, itemDetails, category, cost, paidByUid } = await req.json();
+    const { houseId, date, month, itemDetails, category, cost, paidByUid, items } = await req.json();
 
-    if (!houseId || !date || !itemDetails || !cost || !paidByUid) {
+    if (!houseId || !date || (!itemDetails && (!items || items.length === 0)) || !cost || !paidByUid) {
       return NextResponse.json({ error: "Missing required bazaar fields" }, { status: 400 });
     }
 
@@ -46,6 +46,7 @@ export async function POST(req: Request) {
         category: category || "Grocery/মুদি",
         cost: Number(cost),
         paidByUid,
+        items: Array.isArray(items) ? items : [],
       });
       return NextResponse.json({ bazaar: newBazaar });
     } catch (e) {
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
           category,
           cost: Number(cost),
           paidByUid,
+          items: Array.isArray(items) ? items : [],
         },
       });
     }

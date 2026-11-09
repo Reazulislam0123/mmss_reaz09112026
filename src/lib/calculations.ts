@@ -23,6 +23,7 @@ export interface IBazaarRecord {
   paidByUid: string;
   itemDetails: string;
   category?: string;
+  items?: { name: string; cost: number }[];
 }
 
 export interface IDepositRecord {

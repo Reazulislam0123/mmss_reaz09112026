@@ -9,6 +9,7 @@ export interface IBazaar extends Document {
   cost: number;
   paidByUid: string; // Firebase UID or "MESS_FUND"
   voucherImageUrl?: string;
+  items?: { name: string; cost: number }[];
   createdAt: Date;
 }
 
@@ -26,6 +27,12 @@ const BazaarSchema = new Schema<IBazaar>(
     cost: { type: Number, required: true },
     paidByUid: { type: String, required: true },
     voucherImageUrl: { type: String },
+    items: [
+      {
+        name: { type: String, required: true },
+        cost: { type: Number, required: true },
+      },
+    ],
   },
   { timestamps: true }
 );
