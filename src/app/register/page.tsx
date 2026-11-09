@@ -92,7 +92,7 @@ export default function RegisterPage() {
               </label>
               <input
                 type="text"
-                placeholder="যেমন: তানভীর আহমেদ"
+                placeholder="আপনার নাম লিখুন"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -106,7 +106,7 @@ export default function RegisterPage() {
               </label>
               <input
                 type="email"
-                placeholder="you@email.com"
+                placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

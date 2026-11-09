@@ -78,13 +78,39 @@ interface MessContextType {
 const MessContext = createContext<MessContextType>({} as MessContextType);
 
 export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentHouse, setCurrentHouse] = useState<IHouseData>({
-    ...MOCK_HOUSE,
-    managerFirebaseUid: "UID_ADMIN_01",
-    dutyManagerUid: "UID_MEMBER_02", // Shakil is currently on 5-6 day meal manager duty
-    dutyStartDate: "2026-11-06",
-    dutyEndDate: "2026-11-11",
+  const [currentHouse, setCurrentHouseState] = useState<IHouseData>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedId = localStorage.getItem("smart_mms_active_house_id");
+        if (savedId) {
+          return {
+            ...MOCK_HOUSE,
+            houseId: savedId,
+            managerFirebaseUid: "UID_ADMIN_01",
+          };
+        }
+      } catch (e) {}
+    }
+    return {
+      ...MOCK_HOUSE,
+      managerFirebaseUid: "UID_ADMIN_01",
+      dutyManagerUid: "UID_MEMBER_02",
+      dutyStartDate: "2026-11-06",
+      dutyEndDate: "2026-11-11",
+    };
   });
+
+  const setCurrentHouse = (house: IHouseData | ((prev: IHouseData) => IHouseData)) => {
+    setCurrentHouseState((prev) => {
+      const next = typeof house === "function" ? house(prev) : house;
+      if (typeof window !== "undefined" && next?.houseId) {
+        try {
+          localStorage.setItem("smart_mms_active_house_id", next.houseId);
+        } catch (e) {}
+      }
+      return next;
+    });
+  };
 
   const [availableHouses, setAvailableHouses] = useState<IHouseData[]>([
     {
