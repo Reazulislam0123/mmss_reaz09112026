@@ -12,6 +12,7 @@ interface StepperControlProps {
   max?: number;
   onChange: (val: number) => void;
   disabled?: boolean;
+  compact?: boolean;
 }
 
 export const StepperControl: React.FC<StepperControlProps> = ({
@@ -22,6 +23,7 @@ export const StepperControl: React.FC<StepperControlProps> = ({
   max = 10,
   onChange,
   disabled = false,
+  compact = true,
 }) => {
   const handleDec = () => {
     if (value - step >= min) {
@@ -36,20 +38,22 @@ export const StepperControl: React.FC<StepperControlProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center">
-      <span className="text-xs text-slate-400 font-medium mb-1.5">{label}</span>
-      <div className="flex items-center gap-1.5 bg-slate-950/70 border border-slate-800 rounded-xl p-1">
+    <div className="flex flex-col items-center min-w-0">
+      <span className="text-[11px] text-slate-400 font-medium mb-1 font-bengali truncate">
+        {label}
+      </span>
+      <div className="flex items-center justify-between w-full max-w-[95px] bg-slate-950/70 border border-slate-800/80 rounded-xl p-0.5 shadow-sm">
         <button
           type="button"
           onClick={handleDec}
           disabled={disabled || value <= min}
           aria-label={`${label} কমান`}
-          className="w-10 h-10 min-w-[40px] flex items-center justify-center rounded-lg bg-slate-800/80 text-slate-200 active:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg bg-slate-800/90 text-slate-200 hover:bg-slate-700 active:scale-90 disabled:opacity-20 disabled:pointer-events-none transition-all shrink-0"
         >
-          <Minus className="w-4 h-4" />
+          <Minus className="w-3.5 h-3.5" />
         </button>
 
-        <span className="w-9 text-center font-bold text-base text-amber-400 font-english">
+        <span className="text-xs sm:text-sm font-bold text-amber-300 font-english min-w-[22px] text-center">
           {toBengaliNumeral(value)}
         </span>
 
@@ -58,9 +62,9 @@ export const StepperControl: React.FC<StepperControlProps> = ({
           onClick={handleInc}
           disabled={disabled || value >= max}
           aria-label={`${label} বাড়ান`}
-          className="w-10 h-10 min-w-[40px] flex items-center justify-center rounded-lg bg-slate-800/80 text-slate-200 active:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg bg-slate-800/90 text-slate-200 hover:bg-slate-700 active:scale-90 disabled:opacity-20 disabled:pointer-events-none transition-all shrink-0"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
@@ -68,4 +72,3 @@ export const StepperControl: React.FC<StepperControlProps> = ({
 };
 
 export default StepperControl;
-

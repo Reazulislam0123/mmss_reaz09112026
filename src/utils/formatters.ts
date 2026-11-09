@@ -16,6 +16,71 @@ const BENGALI_DIGITS: { [key: string]: string } = {
   ".": ".",
 };
 
+const BENGALI_MONTHS = [
+  "জানুয়ারি",
+  "ফেব্রুয়ারি",
+  "মার্চ",
+  "এপ্রিল",
+  "মে",
+  "জুন",
+  "জুলাই",
+  "আগস্ট",
+  "সেপ্টেম্বর",
+  "অক্টোবর",
+  "নভেম্বর",
+  "ডিসেম্বর",
+];
+
+const BENGALI_MONTHS_SHORT = [
+  "জানু",
+  "ফেব",
+  "মার্চ",
+  "এপ্রিল",
+  "মে",
+  "জুন",
+  "জুলাই",
+  "আগস্ট",
+  "সেপ্টে",
+  "অক্টো",
+  "নভে",
+  "ডিসে",
+];
+
+const BENGALI_DAYS_SHORT = [
+  "রবি",
+  "সোম",
+  "মঙ্গল",
+  "বুধ",
+  "বৃহঃ",
+  "শুক্র",
+  "শনি",
+];
+
+/**
+ * Returns formatted Bengali Month name e.g. "নভেম্বর ২০২৬" or "নভে '২৬"
+ */
+export function formatMonthBengali(monthStr: string, short: boolean = false): string {
+  if (!monthStr) return "";
+  const [yearStr, mStr] = monthStr.split("-");
+  const monthIdx = parseInt(mStr, 10) - 1;
+  if (monthIdx < 0 || monthIdx > 11) return monthStr;
+
+  const monthName = short ? BENGALI_MONTHS_SHORT[monthIdx] : BENGALI_MONTHS[monthIdx];
+  const yearBengali = toBengaliNumeral(short ? yearStr.slice(-2) : yearStr);
+
+  return short ? `${monthName} '${yearBengali}` : `${monthName} ${yearBengali}`;
+}
+
+/**
+ * Returns Bengali day of week for a YYYY-MM-DD string e.g. "সোম", "মঙ্গল"
+ */
+export function getDayOfWeekBengali(dateStr: string): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  const dayIdx = d.getDay();
+  return BENGALI_DAYS_SHORT[dayIdx] || "";
+}
+
 /**
  * Converts English digits (0-9) to Bengali numerals (০-৯)
  */

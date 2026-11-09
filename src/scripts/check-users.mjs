@@ -10,3 +10,4 @@ const houses = await mongoose.connection.db.collection("houses").find({}).toArra
 console.log("Current MongoDB Houses:", houses.map(h => ({ id: h.houseId, name: h.name, code: h.joinCode })));
 
 await mongoose.disconnect();
+

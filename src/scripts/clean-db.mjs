@@ -49,3 +49,4 @@ const remainingUsers = await db.collection("users").find({}).toArray();
 console.log("Cleaned Users:", remainingUsers.map(u => ({ email: u.email, name: u.fullName, role: u.role, houseId: u.houseId })));
 
 await mongoose.disconnect();
+

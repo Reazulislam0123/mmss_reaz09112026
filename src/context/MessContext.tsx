@@ -19,6 +19,7 @@ import {
   MOCK_FIXED_COSTS,
 } from "../lib/mockData";
 import { getCurrentMonth, getCurrentDate } from "../utils/formatters";
+import { useAuth } from "./AuthContext";
 
 export interface IDutyShift {
   firebaseUid: string;

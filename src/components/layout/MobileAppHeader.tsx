@@ -6,7 +6,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useMess } from "../../context/MessContext";
 import BottomDrawer from "../ui/BottomDrawer";
 import BrandLogo from "../ui/BrandLogo";
+import MonthPickerDrawer from "../ui/MonthPickerDrawer";
 import MealManagerRosterDrawer from "../meals/MealManagerRosterDrawer";
+import { formatMonthBengali } from "../../utils/formatters";
 import {
   Building2,
   Calendar,
@@ -44,6 +46,7 @@ export const MobileAppHeader: React.FC = () => {
   const [showHouseDrawer, setShowHouseDrawer] = useState(false);
   const [showJoinDrawer, setShowJoinDrawer] = useState(false);
   const [showRosterDrawer, setShowRosterDrawer] = useState(false);
+  const [showMonthDrawer, setShowMonthDrawer] = useState(false);
 
   // Form states
   const [joinInputCode, setJoinInputCode] = useState("");
@@ -134,21 +137,18 @@ export const MobileAppHeader: React.FC = () => {
 
           {/* Right tools: Month selector & Clean User Profile menu */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {/* Month Picker dropdown */}
-            <div className="relative flex items-center bg-slate-900 border border-slate-800 rounded-xl px-2 py-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-400 mr-1" />
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="bg-transparent text-xs text-slate-200 font-english font-medium focus:outline-none pr-1 cursor-pointer"
-              >
-                {months.map((m) => (
-                  <option key={m} value={m} className="bg-slate-900 text-slate-200">
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Sleek Month Trigger Pill (replaces clunky browser select) */}
+            <button
+              onClick={() => setShowMonthDrawer(true)}
+              className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-medium text-slate-200 active:scale-95 transition-all shadow-sm group"
+              title="মাস নির্বাচন করুন"
+            >
+              <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="font-bengali text-xs text-slate-100 font-semibold whitespace-nowrap">
+                {formatMonthBengali(selectedMonth, true)}
+              </span>
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+            </button>
 
             {/* User profile persona avatar -> Clean Profile Dropdown */}
             <div className="relative">
@@ -488,6 +488,14 @@ export const MobileAppHeader: React.FC = () => {
       <MealManagerRosterDrawer
         isOpen={showRosterDrawer}
         onClose={() => setShowRosterDrawer(false)}
+      />
+
+      {/* Month Picker Sheet */}
+      <MonthPickerDrawer
+        isOpen={showMonthDrawer}
+        onClose={() => setShowMonthDrawer(false)}
+        selectedMonth={selectedMonth}
+        onSelectMonth={(m) => setSelectedMonth(m)}
       />
     </>
   );
