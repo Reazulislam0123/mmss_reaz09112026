@@ -1,6 +1,6 @@
 import React from "react";
 import GlassCard from "../ui/GlassCard";
-import { formatTaka } from "../../utils/formatters";
+import { formatTaka, toBengaliNumeral, formatMonthBengali, getDayOfWeekBengali } from "../../utils/formatters";
 import { Receipt, CheckCircle } from "lucide-react";
 
 interface DepositCardProps {
@@ -36,6 +36,11 @@ export const DepositCard: React.FC<DepositCardProps> = ({
     }
   };
 
+  const parts = date.split("-");
+  const dayBn = toBengaliNumeral(parts[2] || "০১");
+  const monthBnShort = formatMonthBengali(date.slice(0, 7), true);
+  const dayOfWeekBn = getDayOfWeekBengali(date);
+
   return (
     <GlassCard className="p-3.5">
       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -51,7 +56,9 @@ export const DepositCard: React.FC<DepositCardProps> = ({
             >
               {paymentMethod}
             </span>
-            <span className="text-[11px] text-slate-500 font-english">{date}</span>
+            <span className="text-[11px] text-slate-400 font-bengali">
+              {dayBn} {monthBnShort} ({dayOfWeekBn})
+            </span>
           </div>
         </div>
 
