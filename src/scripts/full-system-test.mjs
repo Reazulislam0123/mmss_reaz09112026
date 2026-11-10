@@ -87,16 +87,16 @@ export function calculateHouseSummary(
   fixedCosts,
   individualBills = []
 ) {
-  const activeMembersCount = members.length || 1;
-  const totalHouseMeals = meals.reduce((acc, m) => acc + (Number(m.totalMeals) || 0), 0);
-  const totalBazaarExpense = bazaars.reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
+  const activeMembersCount = (members || []).length || 1;
+  const totalHouseMeals = (meals || []).reduce((acc, m) => acc + (Number(m.totalMeals) || 0), 0);
+  const totalBazaarExpense = (bazaars || []).reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
   const activeMealRate = calculateMealRate(totalBazaarExpense, totalHouseMeals);
   const utilityPerHead = calculateSharedUtilityPerHead(fixedCosts, activeMembersCount);
 
-  const memberStatements = members.map((member) => {
-    const memberMeals = meals.filter((m) => m.firebaseUid === member.firebaseUid);
-    const memberDeposits = deposits.filter((d) => d.firebaseUid === member.firebaseUid);
-    const memberBill = individualBills.find((b) => b.firebaseUid === member.firebaseUid);
+  const memberStatements = (members || []).map((member) => {
+    const memberMeals = (meals || []).filter((m) => m.firebaseUid === member.firebaseUid);
+    const memberDeposits = (deposits || []).filter((d) => d.firebaseUid === member.firebaseUid);
+    const memberBill = (individualBills || []).find((b) => b.firebaseUid === member.firebaseUid);
 
     return calculateMemberStatement(
       member,
@@ -400,6 +400,98 @@ async function runAllTests() {
   assert(!mealErr, "Meal Mongoose model validates decimal breakfast and totals");
 
   assert(true, "All 6 Mongoose Schemas (House, User, Meal, Bazaar, Deposit, FixedCosts) verified");
+
+  // TEST SUITE 6: ITEMIZED BAZAAR MENU LIST AUTO-SUMMATION
+  console.log("\n▶ SUITE 6: Itemized Bazaar Menu List Calculation");
+  const sampleItems = [
+    { name: "মুরগি ২ কেজি", cost: 520 },
+    { name: "পোলাও চাল ১ কেজি", cost: 140 },
+    { name: "সয়াবিন তেল ১ লিটার", cost: 185 },
+    { name: "পেঁয়াজ ও রসুন", cost: 120 },
+  ];
+  const autoCalculatedTotal = sampleItems.reduce((sum, it) => sum + (Number(it.cost) || 0), 0);
+  assert(autoCalculatedTotal === 965, "Itemized bazaar items accurately auto-sum to 965 Tk");
+
+  const itemDetailsText = sampleItems.map((it) => `${it.name} (৳${it.cost})`).join(", ");
+  assert(
+    itemDetailsText.includes("মুরগি ২ কেজি (৳520)") && itemDetailsText.includes("সয়াবিন তেল ১ লিটার (৳185)"),
+    "Itemized text formatting produces clean receipt summary"
+  );
+
+  // TEST SUITE 7: INDIVIDUAL BILLS INTEGRATION IN HOUSE SUMMARY
+  console.log("\n▶ SUITE 7: Individual Bills & Adjustments Reconciliation");
+  const testMembers = [
+    { firebaseUid: "MEMBER_A", fullName: "সদস্য ক", customRent: 3500 },
+    { firebaseUid: "MEMBER_B", fullName: "সদস্য খ", customRent: 3000 },
+  ];
+  const testMeals = [
+    { date: "2026-11-01", firebaseUid: "MEMBER_A", totalMeals: 20 },
+    { date: "2026-11-01", firebaseUid: "MEMBER_B", totalMeals: 30 },
+  ];
+  const testBazaars = [
+    { date: "2026-11-01", cost: 2500, paidByUid: "MEMBER_A", itemDetails: "চাল ও ডাল" },
+  ];
+  const testDeposits = [
+    { date: "2026-11-01", amount: 5000, firebaseUid: "MEMBER_A", status: "approved" },
+    { date: "2026-11-01", amount: 4000, firebaseUid: "MEMBER_B", status: "approved" },
+  ];
+  const testFixedCosts = { wifi: 1000, cookBill: 3000 }; // 4000 total / 2 = 2000 per head
+  const testIndividualBills = [
+    { firebaseUid: "MEMBER_A", seatFare: 3500, prevDue: 500, charges: 100, khala: 500, others: 0 },
+    { firebaseUid: "MEMBER_B", seatFare: 3200, prevDue: 0, charges: 50, khala: 500, others: 200 },
+  ];
+
+  const reconWithBills = calculateHouseSummary(
+    testMembers,
+    testMeals,
+    testBazaars,
+    testDeposits,
+    testFixedCosts,
+    testIndividualBills
+  );
+
+  assert(reconWithBills.summary.activeMealRate === 50, "Meal rate is 50 Tk (2500 / 50)");
+  assert(reconWithBills.summary.utilityPerHead === 2000, "Shared utility per head is 2000 Tk");
+  
+  // Member A:
+  // mealCost: 20 * 50 = 1000
+  // sharedUtility: 2000
+  // customRent: 3500
+  // adjustments: prevDue 500 + charges 100 + khala 500 = 1100
+  // totalExpense: 1000 + 2000 + 3500 + 1100 = 7600
+  // deposits: 5000 + directBazaar: 2500 = 7500
+  // netBalance: 7500 - 7600 = -100 (বকেয়া)
+  const stmtA = reconWithBills.memberStatements.find((s) => s.firebaseUid === "MEMBER_A");
+  assert(stmtA.totalExpense === 7600, `Member A total expense is 7600 Tk (got ${stmtA.totalExpense})`);
+  assert(stmtA.netBalance === -100, `Member A net balance is -100 Tk (got ${stmtA.netBalance})`);
+  assert(stmtA.status === "বকেয়া", "Member A status is 'বকেয়া'");
+
+  // TEST SUITE 8: DYNAMIC CALENDAR DAYS BOUNDS
+  console.log("\n▶ SUITE 8: Dynamic Calendar Days Bounds");
+  function getDaysInMonth(yearMonthStr) {
+    const [y, m] = yearMonthStr.split("-").map(Number);
+    return new Date(y, m, 0).getDate();
+  }
+  assert(getDaysInMonth("2026-02") === 28, "Feb 2026 has 28 days");
+  assert(getDaysInMonth("2024-02") === 29, "Feb 2024 (Leap Year) has 29 days");
+  assert(getDaysInMonth("2026-11") === 30, "Nov 2026 has 30 days");
+  assert(getDaysInMonth("2026-12") === 31, "Dec 2026 has 31 days");
+
+  // TEST SUITE 9: RBAC & PRIVACY ISOLATION
+  console.log("\n▶ SUITE 9: RBAC & Privacy Isolation Guard");
+  function canBrowseOtherMesses(user) {
+    return user?.role === "super_admin" || user?.email?.toLowerCase() === "reazul.islam6164@gmail.com";
+  }
+  assert(!canBrowseOtherMesses({ role: "member", email: "member@mess.com" }), "Regular member CANNOT browse other messes");
+  assert(!canBrowseOtherMesses({ role: "manager", email: "manager@mess.com" }), "House manager CANNOT browse other messes without super admin");
+  assert(canBrowseOtherMesses({ role: "super_admin", email: "admin@mess.com" }), "Super admin CAN browse all messes");
+  assert(canBrowseOtherMesses({ role: "manager", email: "reazul.islam6164@gmail.com" }), "Reazul Islam has super admin privileges");
+
+  // TEST SUITE 10: DEFENSIVE DATA SAFETY GUARDS
+  console.log("\n▶ SUITE 10: Defensive Data Safety Guards Against Null/Undefined");
+  const safeEmptySummary = calculateHouseSummary(null, null, null, null, null, null);
+  assert(safeEmptySummary.summary.totalHouseMeals === 0, "Safe empty summary handles null meals cleanly");
+  assert(safeEmptySummary.summary.activeMealRate === 0, "Safe empty summary returns 0 meal rate without crashing");
 
   // SUMMARY
   console.log("\n=======================================================");

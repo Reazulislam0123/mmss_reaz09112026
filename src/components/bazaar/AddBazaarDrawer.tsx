@@ -31,6 +31,12 @@ export const AddBazaarDrawer: React.FC<AddBazaarDrawerProps> = ({
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if ((!paidByUid || paidByUid === "MESS_FUND") && members.length > 0 && !paidByUid) {
+      setPaidByUid(members[0].firebaseUid);
+    }
+  }, [members, paidByUid]);
+
   // Dynamic Itemized List with Individual Cost
   const [items, setItems] = useState<IBazaarItemRow[]>([
     { id: "1", name: "", cost: "" },

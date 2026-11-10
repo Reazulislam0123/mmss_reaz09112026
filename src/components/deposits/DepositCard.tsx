@@ -1,7 +1,7 @@
 import React from "react";
 import GlassCard from "../ui/GlassCard";
 import { formatTaka, toBengaliNumeral, formatMonthBengali, getDayOfWeekBengali } from "../../utils/formatters";
-import { Receipt, CheckCircle } from "lucide-react";
+import { Receipt, CheckCircle, Trash2 } from "lucide-react";
 
 interface DepositCardProps {
   id?: string;
@@ -12,9 +12,12 @@ interface DepositCardProps {
   trxId?: string;
   notes?: string;
   onViewVoucher?: () => void;
+  onDelete?: () => void;
+  canDelete?: boolean;
 }
 
 export const DepositCard: React.FC<DepositCardProps> = ({
+  id,
   date,
   memberName,
   amount,
@@ -22,6 +25,8 @@ export const DepositCard: React.FC<DepositCardProps> = ({
   trxId,
   notes,
   onViewVoucher,
+  onDelete,
+  canDelete = false,
 }) => {
   const getMethodBadge = (method: string) => {
     switch (method.toLowerCase()) {
@@ -82,8 +87,18 @@ export const DepositCard: React.FC<DepositCardProps> = ({
         </div>
       )}
 
-      {onViewVoucher && (
-        <div className="border-t border-slate-800/80 pt-2 flex justify-end">
+      <div className="border-t border-slate-800/80 pt-2 flex items-center justify-between">
+        {canDelete && onDelete ? (
+          <button
+            onClick={onDelete}
+            className="text-slate-500 hover:text-rose-400 p-1 active:scale-90 transition-transform"
+            title="জমা রেকর্ড মুছুন"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        ) : <div />}
+
+        {onViewVoucher && (
           <button
             onClick={onViewVoucher}
             className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 active:scale-95 transition-transform font-bengali"
@@ -91,8 +106,8 @@ export const DepositCard: React.FC<DepositCardProps> = ({
             <Receipt className="w-3.5 h-3.5" />
             <span>মানি রসিদ দেখুন</span>
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </GlassCard>
   );
 };

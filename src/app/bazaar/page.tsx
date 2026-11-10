@@ -85,11 +85,11 @@ export default function BazaarPage() {
               কোনো বাজার খরচ পাওয়া যায়নি
             </div>
           ) : (
-            filteredBazaars.map((b) => {
+            filteredBazaars.map((b, idx) => {
               const payer = members.find((m) => m.firebaseUid === b.paidByUid);
               return (
                 <BazaarCard
-                  key={b._id}
+                  key={b._id || `bazaar-${idx}`}
                   id={b._id}
                   date={b.date}
                   itemDetails={b.itemDetails}

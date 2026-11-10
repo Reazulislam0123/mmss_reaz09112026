@@ -6,6 +6,7 @@ import Meal from "@/lib/mongodb/models/Meal";
 import Bazaar from "@/lib/mongodb/models/Bazaar";
 import Deposit from "@/lib/mongodb/models/Deposit";
 import FixedCost from "@/lib/mongodb/models/FixedCost";
+import IndividualBill from "@/lib/mongodb/models/IndividualBill";
 
 export async function GET() {
   try {
@@ -91,6 +92,7 @@ export async function DELETE(req: Request) {
       Bazaar.deleteMany({ houseId }),
       Deposit.deleteMany({ houseId }),
       FixedCost.deleteMany({ houseId }),
+      IndividualBill.deleteMany({ houseId }),
     ]);
 
     return NextResponse.json({

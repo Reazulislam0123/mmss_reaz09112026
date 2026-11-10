@@ -127,13 +127,13 @@ export function calculateMemberStatement(
   sharedUtilityPerHead: number
 ): IMemberStatement {
   // 1. Total meals consumed by this member
-  const totalMeals = memberMeals.reduce((acc, m) => acc + (Number(m.totalMeals) || 0), 0);
+  const totalMeals = (memberMeals || []).reduce((acc, m) => acc + (Number(m.totalMeals) || 0), 0);
 
   // 2. Individual meal cost
-  const mealCost = Math.round(totalMeals * mealRate * 100) / 100;
+  const mealCost = Math.round(totalMeals * (Number(mealRate) || 0) * 100) / 100;
 
   // 3. Custom rent or seat fare
-  const customRent = Number(individualBill?.seatFare) || Number(member.customRent) || 0;
+  const customRent = Number(individualBill?.seatFare) || Number(member?.customRent) || 0;
 
   // 4. Individual bill adjustments (prevDue + charges + khala + others)
   const individualAdjustment =
@@ -144,16 +144,16 @@ export function calculateMemberStatement(
 
   // 5. Total expense for member
   const totalExpense =
-    Math.round((mealCost + sharedUtilityPerHead + customRent + individualAdjustment) * 100) / 100;
+    Math.round((mealCost + (Number(sharedUtilityPerHead) || 0) + customRent + individualAdjustment) * 100) / 100;
 
   // 6. Total deposits paid by member
-  const totalDeposits = memberDeposits
+  const totalDeposits = (memberDeposits || [])
     .filter((d) => d.status !== "pending")
     .reduce((acc, d) => acc + (Number(d.amount) || 0), 0);
 
   // 7. Direct bazaar money paid out of pocket by member
-  const directBazaarPaid = allBazaars
-    .filter((b) => b.paidByUid === member.firebaseUid)
+  const directBazaarPaid = (allBazaars || [])
+    .filter((b) => b.paidByUid === member?.firebaseUid)
     .reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
 
   // 8. Net Balance = (Deposits + Out-of-pocket Bazaar) - Total Expense
@@ -190,13 +190,13 @@ export function calculateHouseSummary(
   summary: IHouseSummary;
   memberStatements: IMemberStatement[];
 } {
-  const activeMembersCount = members.length || 1;
+  const activeMembersCount = (members || []).length || 1;
 
   // Total meals across all members
-  const totalHouseMeals = meals.reduce((acc, m) => acc + (Number(m.totalMeals) || 0), 0);
+  const totalHouseMeals = (meals || []).reduce((acc, m) => acc + (Number(m.totalMeals) || 0), 0);
 
   // Total bazaar cost
-  const totalBazaarExpense = bazaars.reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
+  const totalBazaarExpense = (bazaars || []).reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
 
   // Live meal rate
   const activeMealRate = calculateMealRate(totalBazaarExpense, totalHouseMeals);
@@ -213,15 +213,15 @@ export function calculateHouseSummary(
   const utilityPerHead = calculateSharedUtilityPerHead(fixedCosts, activeMembersCount);
 
   // Total deposits collected
-  const totalDepositsCollected = deposits
+  const totalDepositsCollected = (deposits || [])
     .filter((d) => d.status !== "pending")
     .reduce((acc, d) => acc + (Number(d.amount) || 0), 0);
 
   // Individual statements
-  const memberStatements = members.map((member) => {
-    const memberMeals = meals.filter((m) => m.firebaseUid === member.firebaseUid);
-    const memberDeposits = deposits.filter((d) => d.firebaseUid === member.firebaseUid);
-    const memberBill = individualBills.find((b) => b.firebaseUid === member.firebaseUid);
+  const memberStatements = (members || []).map((member) => {
+    const memberMeals = (meals || []).filter((m) => m.firebaseUid === member.firebaseUid);
+    const memberDeposits = (deposits || []).filter((d) => d.firebaseUid === member.firebaseUid);
+    const memberBill = (individualBills || []).find((b) => b.firebaseUid === member.firebaseUid);
 
     return calculateMemberStatement(
       member,

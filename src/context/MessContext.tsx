@@ -10,6 +10,7 @@ import {
   IBazaarRecord,
   IDepositRecord,
   IFixedCostsData,
+  IIndividualBillRecord,
 } from "../lib/calculations";
 import {
   MOCK_HOUSE,
@@ -63,6 +64,7 @@ interface MessContextType {
   bazaars: IBazaarRecord[];
   deposits: IDepositRecord[];
   fixedCosts: IFixedCostsData;
+  individualBills: IIndividualBillRecord[];
   summary: IHouseSummary;
   memberStatements: IMemberStatement[];
   addMealEntry: (date: string, uid: string, b: number, l: number, d: number) => Promise<void>;
@@ -70,6 +72,7 @@ interface MessContextType {
   addBazaarEntry: (entry: Omit<IBazaarRecord, "_id">) => Promise<void>;
   deleteBazaarEntry: (id: string) => Promise<void>;
   addDepositEntry: (entry: Omit<IDepositRecord, "_id">) => Promise<void>;
+  deleteDepositEntry: (id: string) => Promise<void>;
   updateFixedCosts: (costs: IFixedCostsData) => Promise<void>;
   refreshData: () => Promise<void>;
   loading: boolean;
@@ -137,6 +140,7 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [bazaars, setBazaars] = useState<IBazaarRecord[]>(MOCK_BAZAARS as IBazaarRecord[]);
   const [deposits, setDeposits] = useState<IDepositRecord[]>(MOCK_DEPOSITS as IDepositRecord[]);
   const [fixedCosts, setFixedCosts] = useState<IFixedCostsData>(MOCK_FIXED_COSTS);
+  const [individualBills, setIndividualBills] = useState<IIndividualBillRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Rotating Meal Manager State
@@ -292,13 +296,14 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshData = useCallback(async () => {
     setLoading(true);
     try {
-      const [mealsRes, bazaarsRes, depositsRes, fixedRes, membersRes, housesRes] = await Promise.allSettled([
+      const [mealsRes, bazaarsRes, depositsRes, fixedRes, membersRes, housesRes, billsRes] = await Promise.allSettled([
         fetch(`/api/meals?houseId=${currentHouse.houseId}&month=${selectedMonth}`).then((r) => r.json()),
         fetch(`/api/bazaars?houseId=${currentHouse.houseId}&month=${selectedMonth}`).then((r) => r.json()),
         fetch(`/api/deposits?houseId=${currentHouse.houseId}&month=${selectedMonth}`).then((r) => r.json()),
         fetch(`/api/fixed-costs?houseId=${currentHouse.houseId}&month=${selectedMonth}`).then((r) => r.json()),
         fetch(`/api/members?houseId=${currentHouse.houseId}`).then((r) => r.json()),
         fetch(`/api/houses`).then((r) => r.json()),
+        fetch(`/api/individual-bills?houseId=${currentHouse.houseId}&month=${selectedMonth}`).then((r) => r.json()),
       ]);
 
       if (mealsRes.status === "fulfilled" && mealsRes.value?.meals?.length) {
@@ -312,6 +317,9 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (fixedRes.status === "fulfilled" && fixedRes.value?.fixedCost) {
         setFixedCosts(fixedRes.value.fixedCost);
+      }
+      if (billsRes.status === "fulfilled" && billsRes.value?.bills) {
+        setIndividualBills(billsRes.value.bills);
       }
       if (membersRes.status === "fulfilled" && membersRes.value?.members?.length) {
         setMembers(membersRes.value.members);
@@ -438,7 +446,7 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
     bazaars,
     deposits,
     fixedCosts,
-    []
+    individualBills
   );
 
   const addMealEntry = async (date: string, uid: string, b: number, l: number, d: number) => {
@@ -522,6 +530,13 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
   };
 
+  const deleteDepositEntry = async (id: string) => {
+    setDeposits((prev) => prev.filter((d) => d._id !== id));
+    try {
+      await fetch(`/api/deposits?id=${id}`, { method: "DELETE" });
+    } catch (e) {}
+  };
+
   const updateFixedCosts = async (costs: IFixedCostsData) => {
     setFixedCosts(costs);
     try {
@@ -555,6 +570,7 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
         bazaars,
         deposits,
         fixedCosts,
+        individualBills,
         summary,
         memberStatements,
         addMealEntry,
@@ -562,6 +578,7 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addBazaarEntry,
         deleteBazaarEntry,
         addDepositEntry,
+        deleteDepositEntry,
         updateFixedCosts,
         refreshData,
         loading,

@@ -6,6 +6,7 @@ import Permission from "@/lib/mongodb/models/Permission";
 import Meal from "@/lib/mongodb/models/Meal";
 import Bazaar from "@/lib/mongodb/models/Bazaar";
 import Deposit from "@/lib/mongodb/models/Deposit";
+import IndividualBill from "@/lib/mongodb/models/IndividualBill";
 
 export async function GET() {
   try {
@@ -118,6 +119,7 @@ export async function DELETE(req: Request) {
       Meal.deleteMany({ firebaseUid }),
       Bazaar.deleteMany({ paidByUid: firebaseUid }),
       Deposit.deleteMany({ firebaseUid }),
+      IndividualBill.deleteMany({ firebaseUid }),
     ]);
 
     return NextResponse.json({

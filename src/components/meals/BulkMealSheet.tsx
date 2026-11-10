@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import BottomDrawer from "../ui/BottomDrawer";
 import StepperControl from "../ui/StepperControl";
 import { IMemberProfile } from "../../lib/calculations";
@@ -20,16 +20,23 @@ export const BulkMealSheet: React.FC<BulkMealSheetProps> = ({
   onSave,
 }) => {
   const [selectedDate, setSelectedDate] = useState(getCurrentDate());
-  const [memberEntries, setMemberEntries] = useState<{ [uid: string]: { b: number; l: number; d: number } }>(
-    () => {
-      const init: any = {};
-      members.forEach((m) => {
-        init[m.firebaseUid] = { b: 1, l: 1, d: 1 };
-      });
-      return init;
-    }
-  );
+  const [memberEntries, setMemberEntries] = useState<{ [uid: string]: { b: number; l: number; d: number } }>({});
   const [saving, setSaving] = useState(false);
+
+  // Sync member entries whenever drawer opens or members array loads
+  useEffect(() => {
+    if (isOpen && members.length > 0) {
+      setMemberEntries((prev) => {
+        const next = { ...prev };
+        members.forEach((m) => {
+          if (!next[m.firebaseUid]) {
+            next[m.firebaseUid] = { b: 1, l: 1, d: 1 };
+          }
+        });
+        return next;
+      });
+    }
+  }, [isOpen, members]);
 
   const handleUpdate = (uid: string, field: "b" | "l" | "d", val: number) => {
     setMemberEntries((prev) => ({
@@ -44,12 +51,15 @@ export const BulkMealSheet: React.FC<BulkMealSheetProps> = ({
   const handleBatchSave = async () => {
     setSaving(true);
     try {
-      const payload = Object.entries(memberEntries).map(([uid, vals]) => ({
-        uid,
-        b: vals.b,
-        l: vals.l,
-        d: vals.d,
-      }));
+      const payload = members.map((m) => {
+        const vals = memberEntries[m.firebaseUid] || { b: 1, l: 1, d: 1 };
+        return {
+          uid: m.firebaseUid,
+          b: vals.b,
+          l: vals.l,
+          d: vals.d,
+        };
+      });
       await onSave(selectedDate, payload);
       onClose();
     } finally {

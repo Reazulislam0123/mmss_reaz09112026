@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MobileAppHeader from "../../components/layout/MobileAppHeader";
 import MobileBottomNav from "../../components/layout/MobileBottomNav";
 import DepositCard from "../../components/deposits/DepositCard";
@@ -13,18 +13,30 @@ import { Plus } from "lucide-react";
 
 export default function DepositsPage() {
   const { mongoUser } = useAuth();
-  const { currentHouse, members, deposits, addDepositEntry } = useMess();
+  const { currentHouse, members, deposits, addDepositEntry, deleteDepositEntry } = useMess();
   const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
 
   // Form states
   const [date, setDate] = useState(getCurrentDate());
-  const [firebaseUid, setFirebaseUid] = useState(mongoUser?.firebaseUid || members[0]?.firebaseUid);
+  const [firebaseUid, setFirebaseUid] = useState(mongoUser?.firebaseUid || members[0]?.firebaseUid || "");
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("bKash");
   const [trxId, setTrxId] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Sync default member selection when user or members array arrives
+  useEffect(() => {
+    if (!firebaseUid && (mongoUser?.firebaseUid || members[0]?.firebaseUid)) {
+      setFirebaseUid(mongoUser?.firebaseUid || members[0]?.firebaseUid || "");
+    }
+  }, [mongoUser, members, firebaseUid]);
+
+  const canManage =
+    mongoUser?.role === "manager" ||
+    mongoUser?.role === "super_admin" ||
+    mongoUser?.email?.toLowerCase() === "reazul.islam6164@gmail.com";
 
   const totalDeposits = deposits.reduce((acc, d) => acc + (d.amount || 0), 0);
 
@@ -101,6 +113,8 @@ export default function DepositsPage() {
                   paymentMethod={d.paymentMethod}
                   trxId={d.trxId}
                   notes={d.notes}
+                  canDelete={canManage || d.firebaseUid === mongoUser?.firebaseUid}
+                  onDelete={() => d._id && deleteDepositEntry(d._id)}
                   onViewVoucher={() =>
                     setSelectedVoucher({
                       ...d,
