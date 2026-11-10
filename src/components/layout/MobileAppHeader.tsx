@@ -446,9 +446,9 @@ export const MobileAppHeader: React.FC = () => {
           setShowHouseDrawer(false);
           setIsEditingHouseName(false);
         }}
-        title="মেস ও ম্যানেজার ব্যবস্থাপনা"
+        title={isSuperAdmin ? "মেস ও ম্যানেজার ব্যবস্থাপনা" : "বর্তমান মেসের তথ্য"}
       >
-        <div className="space-y-5 font-bengali">
+        <div className="space-y-4 font-bengali">
           {/* Active House Name with 1-Click Inline Edit Form */}
           <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
             <div className="flex items-center justify-between mb-2">
@@ -458,7 +458,7 @@ export const MobileAppHeader: React.FC = () => {
                   বর্তমান মেসের তথ্য:
                 </span>
               </div>
-              {!isEditingHouseName && (
+              {!isEditingHouseName && (isSuperAdmin || currentHouse.managerFirebaseUid === mongoUser?.firebaseUid || mongoUser?.role === "manager") && (
                 <button
                   type="button"
                   onClick={() => {
@@ -558,161 +558,170 @@ export const MobileAppHeader: React.FC = () => {
             </button>
           </div>
 
-          {/* Active House Selection */}
-          <div>
-            <div className="text-xs font-bold text-slate-300 mb-2 flex items-center justify-between">
-              <span>সক্রিয় মেস নির্বাচন করুন:</span>
-              <span className="text-[10px] text-slate-500">
-                মোট মেস: {availableHouses.length} টি
-              </span>
-            </div>
-            <div className="space-y-2">
-              {availableHouses.map((h) => {
-                const isSelected = h.houseId === currentHouse.houseId;
-                return (
-                  <button
-                    key={h.houseId}
-                    onClick={() => {
-                      setCurrentHouse(h);
-                      setShowHouseDrawer(false);
-                    }}
-                    className={`w-full text-left p-3 rounded-2xl border transition-all flex items-center justify-between ${
-                      isSelected
-                        ? "bg-amber-500/15 border-amber-500/40 text-amber-200"
-                        : "bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700"
-                    }`}
-                  >
-                    <div>
-                      <div className="font-bold text-sm flex items-center gap-1.5">
-                        <span>{h.name}</span>
-                        {isSelected && (
-                          <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-md">
-                            সক্রিয়
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
-                        কোড: <span className="font-mono text-amber-400">{h.joinCode}</span>{" "}
-                        {h.houseId && <span className="font-mono text-slate-500">({h.houseId})</span>}
-                      </div>
-                    </div>
-                    {isSelected && <Check className="w-4 h-4 text-amber-400 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Mess Manager Selection / Assignment */}
-          <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <UserCog className="w-4 h-4 text-amber-400" />
-              <span className="text-xs font-bold text-slate-200">
-                মেস ম্যানেজার নির্বাচন / দায়িত্ব অর্পণ:
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 mb-2.5 leading-relaxed">
-              বর্তমানে দায়িত্বে আছেন:{" "}
-              <span className="font-bold text-amber-400 font-bengali">
-                {currentManager.fullName}
-              </span>
-            </p>
-
-            <div className="space-y-1.5">
-              {members.map((m) => {
-                const isHouseManager =
-                  m.firebaseUid === currentHouse.managerFirebaseUid ||
-                  (m.role === "manager" && !members.some((x) => x.firebaseUid === currentHouse.managerFirebaseUid));
-                return (
-                  <button
-                    key={m.firebaseUid}
-                    onClick={() => {
-                      if (!isHouseManager) {
-                        changeHouseManager(m.firebaseUid);
-                      }
-                    }}
-                    disabled={isHouseManager}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-all ${
-                      isHouseManager
-                        ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold cursor-default"
-                        : "bg-slate-900 border border-slate-800/80 text-slate-300 hover:bg-slate-800 active:scale-98"
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span>{m.fullName}</span>
-                      <span className="text-slate-500 font-english">
-                        {m.roomNo ? `(রুম ${m.roomNo})` : ""}
-                      </span>
-                    </span>
-                    <span
-                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 ${
-                        isHouseManager
-                          ? "bg-amber-500 text-slate-950 font-black shadow-sm"
-                          : "bg-slate-800 text-slate-300 hover:bg-amber-500/20 hover:text-amber-300"
+          {/* Active House Selection - ONLY VISIBLE TO SUPER ADMIN */}
+          {isSuperAdmin && (
+            <div className="p-3 bg-amber-500/5 border border-amber-500/25 rounded-2xl space-y-2">
+              <div className="text-xs font-bold text-amber-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Crown className="w-3.5 h-3.5 text-amber-400" />
+                  <span>সক্রিয় মেস নির্বাচন (সুপার অ্যাডমিন):</span>
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  মোট মেস: {availableHouses.length} টি
+                </span>
+              </div>
+              <div className="space-y-2">
+                {availableHouses.map((h) => {
+                  const isSelected = h.houseId === currentHouse.houseId;
+                  return (
+                    <button
+                      key={h.houseId}
+                      onClick={() => {
+                        setCurrentHouse(h);
+                        setShowHouseDrawer(false);
+                      }}
+                      className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-center justify-between ${
+                        isSelected
+                          ? "bg-amber-500/20 border-amber-500/50 text-amber-200"
+                          : "bg-slate-950/80 border-slate-800 text-slate-300 hover:border-slate-700"
                       }`}
                     >
-                      {isHouseManager ? "👑 বর্তমান ম্যানেজার" : "ম্যানেজার করুন"}
-                    </span>
-                  </button>
-                );
-              })}
+                      <div>
+                        <div className="font-bold text-xs flex items-center gap-1.5">
+                          <span>{h.name}</span>
+                          {isSelected && (
+                            <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-md">
+                              সক্রিয়
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          কোড: <span className="font-mono text-amber-400">{h.joinCode}</span>{" "}
+                          {h.houseId && <span className="font-mono text-slate-500">({h.houseId})</span>}
+                        </div>
+                      </div>
+                      {isSelected && <Check className="w-4 h-4 text-amber-400 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Create New House Form */}
-          {showNewHouseForm ? (
-            <form onSubmit={handleCreateHouse} className="space-y-3 pt-2">
-              <div>
-                <label className="text-xs text-slate-400 block mb-1">
-                  নতুন মেসের নাম লিখুন
-                </label>
-                <input
-                  type="text"
-                  placeholder="যেমন: মিরপুর স্টার পয়েন্ট"
-                  value={newHouseName}
-                  onChange={(e) => setNewHouseName(e.target.value)}
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500/50"
-                />
+          {/* Mess Manager Selection / Assignment (Only for Manager or Super Admin) */}
+          {(isSuperAdmin || currentHouse.managerFirebaseUid === mongoUser?.firebaseUid || mongoUser?.role === "manager") && (
+            <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
+              <div className="flex items-center gap-2 mb-2">
+                <UserCog className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold text-slate-200">
+                  মেস ম্যানেজার নির্বাচন / দায়িত্ব অর্পণ:
+                </span>
               </div>
+              <p className="text-[11px] text-slate-400 mb-2.5 leading-relaxed">
+                বর্তমানে দায়িত্বে আছেন:{" "}
+                <span className="font-bold text-amber-400 font-bengali">
+                  {currentManager.fullName}
+                </span>
+              </p>
 
-              <div>
-                <label className="text-xs text-slate-400 block mb-1">
-                  ঠিকানা (ঐচ্ছিক)
-                </label>
-                <input
-                  type="text"
-                  placeholder="যেমন: রোড ৩, মিরপুর ১০"
-                  value={newHouseAddress}
-                  onChange={(e) => setNewHouseAddress(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500/50"
-                />
+              <div className="space-y-1.5">
+                {members.map((m) => {
+                  const isHouseManager =
+                    m.firebaseUid === currentHouse.managerFirebaseUid ||
+                    (m.role === "manager" && !members.some((x) => x.firebaseUid === currentHouse.managerFirebaseUid));
+                  return (
+                    <button
+                      key={m.firebaseUid}
+                      onClick={() => {
+                        if (!isHouseManager) {
+                          changeHouseManager(m.firebaseUid);
+                        }
+                      }}
+                      disabled={isHouseManager}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-all ${
+                        isHouseManager
+                          ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold cursor-default"
+                          : "bg-slate-900 border border-slate-800/80 text-slate-300 hover:bg-slate-800 active:scale-98"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span>{m.fullName}</span>
+                        <span className="text-slate-500 font-english">
+                          {m.roomNo ? `(রুম ${m.roomNo})` : ""}
+                        </span>
+                      </span>
+                      <span
+                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 ${
+                          isHouseManager
+                            ? "bg-amber-500 text-slate-950 font-black shadow-sm"
+                            : "bg-slate-800 text-slate-300 hover:bg-amber-500/20 hover:text-amber-300"
+                        }`}
+                      >
+                        {isHouseManager ? "👑 বর্তমান ম্যানেজার" : "ম্যানেজার করুন"}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
+            </div>
+          )}
 
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs"
-                >
-                  মেস তৈরি করুন
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowNewHouseForm(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs"
-                >
-                  বাতিল
-                </button>
-              </div>
-            </form>
-          ) : (
-            <button
-              onClick={() => setShowNewHouseForm(true)}
-              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ নতুন মেস তৈরি করুন</span>
-            </button>
+          {/* Create New House Form (ONLY FOR SUPER ADMIN) */}
+          {isSuperAdmin && (
+            showNewHouseForm ? (
+              <form onSubmit={handleCreateHouse} className="space-y-3 pt-2">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">
+                    নতুন মেসের নাম লিখুন
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="যেমন: মিরপুর স্টার পয়েন্ট"
+                    value={newHouseName}
+                    onChange={(e) => setNewHouseName(e.target.value)}
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">
+                    ঠিকানা (ঐচ্ছিক)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="যেমন: রোড ৩, মিরপুর ১০"
+                    value={newHouseAddress}
+                    onChange={(e) => setNewHouseAddress(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs"
+                  >
+                    মেস তৈরি করুন
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewHouseForm(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs"
+                  >
+                    বাতিল
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                onClick={() => setShowNewHouseForm(true)}
+                className="w-full py-2.5 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-750 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+              >
+                <Plus className="w-4 h-4 text-amber-400" />
+                <span>+ নতুন মেস তৈরি করুন (সুপার অ্যাডমিন)</span>
+              </button>
+            )
           )}
         </div>
       </BottomDrawer>
