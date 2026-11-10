@@ -143,6 +143,23 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [individualBills, setIndividualBills] = useState<IIndividualBillRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
+  const { mongoUser } = useAuth();
+
+  // If a regular member logs in, automatically sync active mess to their assigned house
+  useEffect(() => {
+    if (mongoUser?.houseId && availableHouses.length > 0) {
+      const isSuperAdmin =
+        mongoUser.role === "super_admin" ||
+        mongoUser.email?.toLowerCase() === "reazul.islam6164@gmail.com";
+      if (!isSuperAdmin) {
+        const myHouse = availableHouses.find((h) => h.houseId === mongoUser.houseId);
+        if (myHouse && myHouse.houseId !== currentHouse.houseId) {
+          setCurrentHouse(myHouse);
+        }
+      }
+    }
+  }, [mongoUser, availableHouses, currentHouse.houseId]);
+
   // Rotating Meal Manager State
   const [dutyManagerUid, setDutyManagerUid] = useState<string>("UID_MEMBER_02");
   const [dutyStartDate, setDutyStartDate] = useState<string>("2026-11-06");
@@ -457,10 +474,11 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     try {
+      const hId = currentHouse.houseId || mongoUser?.houseId || "HOUSE_DHAKA_01";
       await fetch("/api/meals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ houseId: currentHouse.houseId, date, firebaseUid: uid, breakfast: b, lunch: l, dinner: d }),
+        body: JSON.stringify({ houseId: hId, date, firebaseUid: uid, breakfast: b, lunch: l, dinner: d }),
       });
     } catch (e) {}
   };
@@ -483,10 +501,11 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     try {
+      const hId = currentHouse.houseId || mongoUser?.houseId || "HOUSE_DHAKA_01";
       await fetch("/api/meals", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ houseId: currentHouse.houseId, date, entries }),
+        body: JSON.stringify({ houseId: hId, date, entries }),
       });
     } catch (e) {}
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MobileAppHeader from "../../components/layout/MobileAppHeader";
 import MobileBottomNav from "../../components/layout/MobileBottomNav";
 import BalanceAlertBanner from "../../components/dashboard/BalanceAlertBanner";
@@ -30,6 +30,7 @@ import Link from "next/link";
 export default function DashboardPage() {
   const { mongoUser } = useAuth();
   const {
+    currentHouse,
     members,
     meals,
     bazaars,
@@ -46,19 +47,85 @@ export default function DashboardPage() {
   const [showBazaarDrawer, setShowBazaarDrawer] = useState(false);
   const [showDepositDrawer, setShowDepositDrawer] = useState(false);
 
+  const isSuperAdmin =
+    mongoUser?.role === "super_admin" ||
+    mongoUser?.email?.toLowerCase() === "reazul.islam6164@gmail.com";
+
+  const isHouseManager =
+    isSuperAdmin ||
+    mongoUser?.role === "manager" ||
+    currentHouse?.managerFirebaseUid === mongoUser?.firebaseUid;
+
+  const isDutyManager = mongoUser?.firebaseUid === dutyManagerUid;
+  const canManageMeals = isHouseManager || isDutyManager;
+
   // Quick single meal state for today
   const todayStr = getCurrentDate();
+  const activeUserUid = mongoUser?.firebaseUid || members[0]?.firebaseUid || "UID_01";
   const userTodayMeal = meals.find(
-    (m) => m.date === todayStr && m.firebaseUid === mongoUser?.firebaseUid
+    (m) => m.date === todayStr && m.firebaseUid === activeUserUid
   ) || { breakfast: 1, lunch: 1, dinner: 1, totalMeals: 3 };
 
   // Current user's statement
   const userStatement = memberStatements.find(
-    (s) => s.firebaseUid === mongoUser?.firebaseUid
+    (s) => s.firebaseUid === activeUserUid
   ) || {
-    fullName: mongoUser?.fullName || "সদস্য",
+    fullName: mongoUser?.fullName || members[0]?.fullName || "সদস্য",
     netBalance: 0,
     totalMeals: 0,
+  };
+
+  // Controlled Quick Meal Drawer States
+  const [drawerMemberUid, setDrawerMemberUid] = useState<string>(activeUserUid);
+  const [drawerDate, setDrawerDate] = useState<string>(todayStr);
+  const [drawerB, setDrawerB] = useState<number>(1);
+  const [drawerL, setDrawerL] = useState<number>(1);
+  const [drawerD, setDrawerD] = useState<number>(1);
+  const [savingMeal, setSavingMeal] = useState<boolean>(false);
+  const [mealSuccessToast, setMealSuccessToast] = useState<string>("");
+
+  // Sync drawer member UID when active user or members load
+  useEffect(() => {
+    if (activeUserUid && (!drawerMemberUid || drawerMemberUid === "UID_01")) {
+      setDrawerMemberUid(activeUserUid);
+    }
+  }, [activeUserUid, drawerMemberUid]);
+
+  // Sync drawer values whenever drawer opens or target member/date changes
+  useEffect(() => {
+    if (showMealDrawer) {
+      const targetUid = drawerMemberUid || activeUserUid;
+      const found = meals.find((m) => m.date === drawerDate && m.firebaseUid === targetUid);
+      if (found) {
+        setDrawerB(found.breakfast);
+        setDrawerL(found.lunch);
+        setDrawerD(found.dinner);
+      } else {
+        setDrawerB(1);
+        setDrawerL(1);
+        setDrawerD(1);
+      }
+    }
+  }, [showMealDrawer, drawerMemberUid, drawerDate, meals, activeUserUid]);
+
+  const handleSaveMealDrawer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetUid = drawerMemberUid || activeUserUid;
+    if (!targetUid) return;
+
+    setSavingMeal(true);
+    try {
+      await addMealEntry(drawerDate, targetUid, drawerB, drawerL, drawerD);
+      const targetM = members.find((m) => m.firebaseUid === targetUid);
+      const mName = targetM?.fullName || (targetUid === mongoUser?.firebaseUid ? "আপনার" : "সদস্যের");
+      setMealSuccessToast(`✓ ${mName} মিল সফলভাবে সংরক্ষিত হয়েছে!`);
+      setTimeout(() => {
+        setMealSuccessToast("");
+        setShowMealDrawer(false);
+      }, 1000);
+    } finally {
+      setSavingMeal(false);
+    }
   };
 
   // Deposit state
@@ -72,7 +139,7 @@ export default function DashboardPage() {
     await addDepositEntry({
       date: todayStr,
       amount: Number(depAmount),
-      firebaseUid: mongoUser?.firebaseUid || "UID_01",
+      firebaseUid: activeUserUid,
       paymentMethod: depMethod as any,
       trxId: depTrx,
       status: "approved",
@@ -186,9 +253,7 @@ export default function DashboardPage() {
                 dinner={userTodayMeal.dinner}
                 totalMeals={userTodayMeal.totalMeals}
                 onUpdate={(b, l, d) => {
-                  if (mongoUser) {
-                    addMealEntry(todayStr, mongoUser.firebaseUid, b, l, d);
-                  }
+                  addMealEntry(todayStr, activeUserUid, b, l, d);
                 }}
               />
             </div>
@@ -355,69 +420,121 @@ export default function DashboardPage() {
       <BottomDrawer
         isOpen={showMealDrawer}
         onClose={() => setShowMealDrawer(false)}
-        title="আজকের মিল আপডেট"
+        title="মিল এন্ট্রি ও আপডেট (Meal Update)"
       >
-        <div className="space-y-4">
-          <p className="text-xs text-slate-400 font-bengali">
-            {todayStr} তারিখে আপনার মিল সংখ্যা দ্রুত সমন্বয় করুন:
-          </p>
-          <div className="grid grid-cols-3 gap-2">
+        <form onSubmit={handleSaveMealDrawer} className="space-y-4 font-bengali">
+          {/* Member selector for Managers / Super Admins */}
+          {canManageMeals ? (
+            <div>
+              <label className="text-xs text-slate-300 font-bold block mb-1 flex items-center justify-between">
+                <span>সদস্য নির্বাচন করুন (ম্যানেজার এক্সেস):</span>
+                <span className="text-[10px] text-amber-400">ব্যক্তিগত মিল এন্ট্রি</span>
+              </label>
+              <select
+                value={drawerMemberUid}
+                onChange={(e) => setDrawerMemberUid(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 font-bold focus:outline-none focus:border-amber-500"
+              >
+                {members.map((m) => (
+                  <option key={m.firebaseUid} value={m.firebaseUid}>
+                    {m.fullName} {m.roomNo ? `(রুম ${m.roomNo})` : ""} {m.firebaseUid === activeUserUid ? "— আপনি" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] text-slate-400 block">সদস্যের নাম:</span>
+                <span className="text-xs font-bold text-slate-200">
+                  {mongoUser?.fullName || members[0]?.fullName || "ব্যবহারকারী"}
+                </span>
+              </div>
+              <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+                ব্যক্তিগত মিল
+              </span>
+            </div>
+          )}
+
+          {/* Date Picker */}
+          <div>
+            <label className="text-xs text-slate-400 block mb-1">তারিখ</label>
+            <input
+              type="date"
+              value={drawerDate}
+              onChange={(e) => setDrawerDate(e.target.value)}
+              required
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-english focus:outline-none focus:border-amber-500"
+            />
+          </div>
+
+          {/* Quick Preset Buttons (1-1-1 / Off) */}
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <span className="text-xs text-slate-400 font-semibold">দ্রুত নির্বাচন:</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => { setDrawerB(1); setDrawerL(1); setDrawerD(1); }}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 active:scale-95 transition-all"
+              >
+                ১-১-১ (ফুল মিল)
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDrawerB(0); setDrawerL(0); setDrawerD(0); }}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 active:scale-95 transition-all"
+              >
+                ০-০-০ (মিল বন্ধ)
+              </button>
+            </div>
+          </div>
+
+          {/* Steppers for Breakfast, Lunch, Dinner */}
+          <div className="grid grid-cols-3 gap-2 bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3">
             <StepperControl
               label="সকাল"
-              value={userTodayMeal.breakfast}
+              value={drawerB}
               step={0.5}
-              onChange={(v) => {
-                if (mongoUser) {
-                  addMealEntry(
-                    todayStr,
-                    mongoUser.firebaseUid,
-                    v,
-                    userTodayMeal.lunch,
-                    userTodayMeal.dinner
-                  );
-                }
-              }}
+              onChange={(v) => setDrawerB(v)}
             />
             <StepperControl
               label="দুপুর"
-              value={userTodayMeal.lunch}
+              value={drawerL}
               step={1}
-              onChange={(v) => {
-                if (mongoUser) {
-                  addMealEntry(
-                    todayStr,
-                    mongoUser.firebaseUid,
-                    userTodayMeal.breakfast,
-                    v,
-                    userTodayMeal.dinner
-                  );
-                }
-              }}
+              onChange={(v) => setDrawerL(v)}
             />
             <StepperControl
               label="রাত"
-              value={userTodayMeal.dinner}
+              value={drawerD}
               step={1}
-              onChange={(v) => {
-                if (mongoUser) {
-                  addMealEntry(
-                    todayStr,
-                    mongoUser.firebaseUid,
-                    userTodayMeal.breakfast,
-                    userTodayMeal.lunch,
-                    v
-                  );
-                }
-              }}
+              onChange={(v) => setDrawerD(v)}
             />
           </div>
+
+          {/* Total Meals Counter */}
+          <div className="flex items-center justify-between p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+            <span className="text-xs text-slate-300 font-semibold">দৈনিক মোট মিল:</span>
+            <span className="text-sm font-bold text-amber-300 font-english">
+              {toBengaliNumeral(drawerB + drawerL + drawerD)} টি
+            </span>
+          </div>
+
+          {/* Success Toast */}
+          {mealSuccessToast && (
+            <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold text-center animate-in fade-in">
+              {mealSuccessToast}
+            </div>
+          )}
+
+          {/* Submit Button */}
           <button
-            onClick={() => setShowMealDrawer(false)}
-            className="w-full py-3 rounded-2xl bg-amber-500 text-slate-950 font-bold font-bengali"
+            type="submit"
+            disabled={savingMeal}
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold font-bengali shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all disabled:opacity-50 text-sm flex items-center justify-center gap-2"
           >
-            সম্পন্ন
+            {savingMeal ? "সংরক্ষণ হচ্ছে..." : "✓ মিল সেভ করুন (Save Meal)"}
           </button>
-        </div>
+        </form>
       </BottomDrawer>
 
       {/* Quick Add Bazaar Drawer */}

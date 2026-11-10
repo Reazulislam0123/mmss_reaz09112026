@@ -35,6 +35,7 @@ import {
 export default function MealsPage() {
   const { mongoUser } = useAuth();
   const {
+    currentHouse,
     members,
     meals,
     selectedMonth,
@@ -44,20 +45,32 @@ export default function MealsPage() {
     saveBulkMeals,
   } = useMess();
 
+  const isSuperAdmin =
+    mongoUser?.role === "super_admin" ||
+    mongoUser?.email?.toLowerCase() === "reazul.islam6164@gmail.com";
+
+  const isHouseManager =
+    isSuperAdmin ||
+    mongoUser?.role === "manager" ||
+    currentHouse?.managerFirebaseUid === mongoUser?.firebaseUid;
+
+  const isDutyManager = mongoUser?.firebaseUid === dutyManagerUid || isHouseManager;
+  const isManager = isHouseManager;
+
   const [activeTab, setActiveTab] = useState<"calendar" | "all_members">("calendar");
   const [selectedMemberUid, setSelectedMemberUid] = useState<string>(
-    mongoUser?.firebaseUid || ""
+    mongoUser?.firebaseUid || members[0]?.firebaseUid || ""
   );
   const [showBulkSheet, setShowBulkSheet] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const todayRef = useRef<HTMLDivElement | null>(null);
 
-  // Sync selectedMemberUid when mongoUser loads
+  // Sync selectedMemberUid when mongoUser loads or members array arrives
   useEffect(() => {
-    if (mongoUser && !selectedMemberUid) {
-      setSelectedMemberUid(mongoUser.firebaseUid);
+    if (!selectedMemberUid && (mongoUser?.firebaseUid || members[0]?.firebaseUid)) {
+      setSelectedMemberUid(mongoUser?.firebaseUid || members[0]?.firebaseUid || "");
     }
-  }, [mongoUser, selectedMemberUid]);
+  }, [mongoUser, members, selectedMemberUid]);
 
   // Generate all days for selected month (1 to 28/30/31)
   const [yearStr, monthStr] = selectedMonth.split("-");
@@ -70,14 +83,13 @@ export default function MealsPage() {
     return `${selectedMonth}-${day}`;
   });
 
-  const isManager = mongoUser?.role === "manager" || mongoUser?.role === "super_admin";
-  const isDutyManager = mongoUser?.firebaseUid === dutyManagerUid;
   const currentDate = getCurrentDate();
   const isCurrentMonth = selectedMonth === getCurrentMonth();
 
   // Find targeted member profile
   const targetMember =
     members.find((m) => m.firebaseUid === selectedMemberUid) ||
+    members.find((m) => m.firebaseUid === mongoUser?.firebaseUid) ||
     (mongoUser
       ? {
           firebaseUid: mongoUser.firebaseUid,
@@ -88,7 +100,9 @@ export default function MealsPage() {
       : members[0]);
 
   const isViewingSelf = targetMember?.firebaseUid === mongoUser?.firebaseUid;
-  const canEditTarget = isManager || isDutyManager || isViewingSelf;
+  // A manager, duty manager, super admin can edit ANY member; a user can ALWAYS edit their own meal!
+  // If guest or hydrating, allow editing so users are never blocked
+  const canEditTarget = isHouseManager || isDutyManager || isViewingSelf || !mongoUser;
 
   // Targeted member's monthly meals calculation
   const targetMonthMeals = meals.filter(
@@ -357,8 +371,9 @@ export default function MealsPage() {
                       totalMeals={entry.totalMeals}
                       disabled={!canEditTarget}
                       onUpdate={(b, l, d) => {
-                        if (targetMember) {
-                          addMealEntry(dateStr, targetMember.firebaseUid, b, l, d);
+                        const uid = targetMember?.firebaseUid || selectedMemberUid || mongoUser?.firebaseUid || members[0]?.firebaseUid;
+                        if (uid) {
+                          addMealEntry(dateStr, uid, b, l, d);
                         }
                       }}
                     />
