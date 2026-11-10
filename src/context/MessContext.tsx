@@ -245,6 +245,21 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDutyStartDate(today);
     setDutyEndDate(endStr);
 
+    setCurrentHouse((prev) => ({
+      ...prev,
+      dutyManagerUid: newManagerUid,
+      dutyStartDate: today,
+      dutyEndDate: endStr,
+    }));
+
+    setAvailableHouses((prev) =>
+      prev.map((h) =>
+        h.houseId === currentHouse.houseId
+          ? { ...h, dutyManagerUid: newManagerUid, dutyStartDate: today, dutyEndDate: endStr }
+          : h
+      )
+    );
+
     // Update roster active statuses
     setDutyRoster((prev) =>
       prev.map((shift) => {

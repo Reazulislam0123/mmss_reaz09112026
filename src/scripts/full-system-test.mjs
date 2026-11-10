@@ -493,6 +493,38 @@ async function runAllTests() {
   assert(safeEmptySummary.summary.totalHouseMeals === 0, "Safe empty summary handles null meals cleanly");
   assert(safeEmptySummary.summary.activeMealRate === 0, "Safe empty summary returns 0 meal rate without crashing");
 
+  // TEST SUITE 11: ROTATING MEAL MANAGER EDIT PERMISSIONS
+  console.log("\n▶ SUITE 11: Meal Manager (চলতি মিল ম্যানেজার) Meal Update Permissions");
+  function canEditMeal(user, house, targetMember, dutyManagerUid, dutyRoster = []) {
+    const isSuperAdmin = user?.role === "super_admin" || user?.email?.toLowerCase() === "reazul.islam6164@gmail.com";
+    const isHouseManager = isSuperAdmin || user?.role === "manager" || house?.managerFirebaseUid === user?.firebaseUid;
+    const isMealManager =
+      user?.firebaseUid === dutyManagerUid ||
+      house?.dutyManagerUid === user?.firebaseUid ||
+      user?.role === "meal_manager" ||
+      dutyRoster.some((s) => s.status === "active" && s.firebaseUid === user?.firebaseUid);
+
+    const isViewingSelf = targetMember?.firebaseUid === user?.firebaseUid;
+    return isHouseManager || isMealManager || isViewingSelf;
+  }
+
+  const dummyHouse = { houseId: "H1", managerFirebaseUid: "MGR_01", dutyManagerUid: "MEAL_MGR_02" };
+  const memberA = { firebaseUid: "MEMBER_03", fullName: "সদস্য গ" };
+  const mealManager = { firebaseUid: "MEAL_MGR_02", role: "member", fullName: "চলতি মিল ম্যানেজার" };
+  const regularMember = { firebaseUid: "MEMBER_04", role: "member", fullName: "সাধারণ সদস্য" };
+
+  // 1. Meal Manager can edit Member A's meal
+  assert(canEditMeal(mealManager, dummyHouse, memberA, "MEAL_MGR_02"), "Meal Manager CAN edit other member's meal");
+
+  // 2. Meal Manager can edit their own meal
+  assert(canEditMeal(mealManager, dummyHouse, mealManager, "MEAL_MGR_02"), "Meal Manager CAN edit their own meal");
+
+  // 3. Regular member CANNOT edit other member's meal
+  assert(!canEditMeal(regularMember, dummyHouse, memberA, "MEAL_MGR_02"), "Regular member CANNOT edit another member's meal");
+
+  // 4. Regular member CAN edit their own meal
+  assert(canEditMeal(regularMember, dummyHouse, regularMember, "MEAL_MGR_02"), "Regular member CAN edit their own meal");
+
   // SUMMARY
   console.log("\n=======================================================");
   console.log(`TOTAL TESTS: ${passedCount + failedCount}`);

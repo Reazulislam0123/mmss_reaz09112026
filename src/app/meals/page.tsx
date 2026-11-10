@@ -41,6 +41,7 @@ export default function MealsPage() {
     selectedMonth,
     setSelectedMonth,
     dutyManagerUid,
+    dutyRoster,
     addMealEntry,
     saveBulkMeals,
   } = useMess();
@@ -54,8 +55,18 @@ export default function MealsPage() {
     mongoUser?.role === "manager" ||
     currentHouse?.managerFirebaseUid === mongoUser?.firebaseUid;
 
-  const isDutyManager = mongoUser?.firebaseUid === dutyManagerUid || isHouseManager;
-  const isManager = isHouseManager;
+  // The rotating Meal Manager (চলতি মিল ম্যানেজার)
+  const isMealManager =
+    mongoUser?.firebaseUid === dutyManagerUid ||
+    currentHouse?.dutyManagerUid === mongoUser?.firebaseUid ||
+    (mongoUser?.role as string) === "meal_manager" ||
+    dutyRoster?.some(
+      (shift) => shift.status === "active" && shift.firebaseUid === mongoUser?.firebaseUid
+    );
+
+  const isDutyManager = isMealManager || isHouseManager;
+  const isManager = isHouseManager || isMealManager;
+  const canManageAllMeals = isManager;
 
   const [activeTab, setActiveTab] = useState<"calendar" | "all_members">("calendar");
   const [selectedMemberUid, setSelectedMemberUid] = useState<string>(
@@ -341,8 +352,15 @@ export default function MealsPage() {
               </div>
 
               {canEditTarget ? (
-                <span className="text-[10px] text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bengali font-semibold shrink-0">
-                  ✏️ এডিট করার অনুমতি
+                <span className="text-[10px] text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bengali font-semibold shrink-0 flex items-center gap-1">
+                  <span>✏️</span>
+                  <span>
+                    {isMealManager && !isHouseManager
+                      ? "মিল ম্যানেজার এডিট অনুমতি"
+                      : isHouseManager
+                      ? "ম্যানেজার এডিট অনুমতি"
+                      : "নিজের মিল এডিট"}
+                  </span>
                 </span>
               ) : (
                 <span className="text-[10px] text-slate-400 bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-full font-bengali flex items-center gap-1 shrink-0">

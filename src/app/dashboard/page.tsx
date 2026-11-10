@@ -38,6 +38,7 @@ export default function DashboardPage() {
     summary,
     memberStatements,
     dutyManagerUid,
+    dutyRoster,
     addMealEntry,
     addBazaarEntry,
     addDepositEntry,
@@ -56,8 +57,16 @@ export default function DashboardPage() {
     mongoUser?.role === "manager" ||
     currentHouse?.managerFirebaseUid === mongoUser?.firebaseUid;
 
-  const isDutyManager = mongoUser?.firebaseUid === dutyManagerUid;
-  const canManageMeals = isHouseManager || isDutyManager;
+  // The rotating Meal Manager (চলতি মিল ম্যানেজার)
+  const isMealManager =
+    mongoUser?.firebaseUid === dutyManagerUid ||
+    currentHouse?.dutyManagerUid === mongoUser?.firebaseUid ||
+    (mongoUser?.role as string) === "meal_manager" ||
+    dutyRoster?.some(
+      (s) => s.status === "active" && s.firebaseUid === mongoUser?.firebaseUid
+    );
+
+  const canManageMeals = isHouseManager || isMealManager;
 
   // Quick single meal state for today
   const todayStr = getCurrentDate();

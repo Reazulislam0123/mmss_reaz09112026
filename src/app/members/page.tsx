@@ -13,7 +13,7 @@ import { Users, KeyRound, Copy, Shield, ShieldCheck, Home, Pencil, Check, UserCh
 
 export default function MembersPage() {
   const { mongoUser } = useAuth();
-  const { currentHouse, members, changeHouseManager, updateHouseName, refreshData } = useMess();
+  const { currentHouse, members, changeHouseManager, updateHouseName, refreshData, dutyManagerUid, handoverDutyManager } = useMess();
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [houseNameInput, setHouseNameInput] = useState(currentHouse.name);
@@ -227,6 +227,7 @@ export default function MembersPage() {
             const isManager =
               m.firebaseUid === currentHouse.managerFirebaseUid ||
               (m.role === "manager" && !members.some((x) => x.firebaseUid === currentHouse.managerFirebaseUid));
+            const isDutyManager = m.firebaseUid === dutyManagerUid || m.firebaseUid === currentHouse.dutyManagerUid;
             return (
               <GlassCard key={m.firebaseUid} className="p-3.5">
                 <div className="flex items-center justify-between">
@@ -235,8 +236,8 @@ export default function MembersPage() {
                       <span className="font-bold text-slate-100 font-bengali text-sm">
                         {m.fullName}
                       </span>
-                      <Badge variant={isManager ? "amber" : "slate"}>
-                        {isManager ? "👑 ম্যানেজার" : "সদস্য"}
+                      <Badge variant={isManager ? "amber" : isDutyManager ? "emerald" : "slate"}>
+                        {isManager ? "👑 মেস ম্যানেজার" : isDutyManager ? "👨‍🍳 মিল ম্যানেজার" : "সদস্য"}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-400 font-english mt-0.5">
@@ -245,7 +246,7 @@ export default function MembersPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
                     {isMe && (
                       <button
                         onClick={() => setShowProfileDrawer(true)}
@@ -257,14 +258,20 @@ export default function MembersPage() {
                       </button>
                     )}
 
-                    {m.customRent && m.customRent > 0 ? (
-                      <div className="text-right mr-1">
-                        <span className="text-[10px] text-slate-500 font-bengali block">সিট ভাড়া</span>
-                        <span className="text-xs font-bold text-slate-300 font-english">
-                          {formatTaka(m.customRent, true)}
-                        </span>
-                      </div>
-                    ) : null}
+                    {/* Meal Manager handover button */}
+                    {!isDutyManager && (isSuperAdmin || currentHouse.managerFirebaseUid === mongoUser?.firebaseUid) && (
+                      <button
+                        onClick={async () => {
+                          await handoverDutyManager(m.firebaseUid, 6);
+                          setSuccessToast(`${m.fullName}-কে মিল ম্যানেজার করা হয়েছে!`);
+                          setTimeout(() => setSuccessToast(""), 2500);
+                        }}
+                        className="px-2 py-1.5 rounded-xl text-xs font-bengali flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 active:scale-95 transition-all font-medium"
+                        title="ইনাকে চলতি মিল ম্যানেজার নির্ধারণ করুন"
+                      >
+                        <span>👨‍🍳 মিল ম্যানেজার</span>
+                      </button>
+                    )}
 
                     {/* Manager selection button */}
                     <button
@@ -279,17 +286,17 @@ export default function MembersPage() {
                           ? "bg-amber-500 text-slate-950 font-bold cursor-default"
                           : "bg-slate-800 text-slate-300 hover:bg-slate-700 active:scale-95"
                       }`}
-                      title={isManager ? "বর্তমান ম্যানেজার" : "ইনাকে ম্যানেজার নির্বাচন করুন"}
+                      title={isManager ? "বর্তমান মেস ম্যানেজার" : "ইনাকে মেস ম্যানেজার নির্বাচন করুন"}
                     >
                       {isManager ? (
                         <>
                           <ShieldCheck className="w-3.5 h-3.5" />
-                          <span>বর্তমান ম্যানেজার</span>
+                          <span>মেস ম্যানেজার</span>
                         </>
                       ) : (
                         <>
                           <Shield className="w-3.5 h-3.5 text-slate-400" />
-                          <span>ম্যানেজার করুন</span>
+                          <span>ম্যানেজার</span>
                         </>
                       )}
                     </button>
